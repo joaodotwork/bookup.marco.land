@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div class="box-holder" style="animation-play-state: running !important;">
+    <div class="box-holder" :style="animationStyleObject">
         <div  class="box--front"
               :style="{
                 'width': boxWidth + 'px',
@@ -58,11 +58,10 @@
 <script>
 export default {
   name: 'Book',
-  props: ['width', 'height', 'depth', 'cover', 'back', 'spine', 'paper'],
+  props: ['width', 'height', 'depth', 'scale', 'cover', 'back', 'spine', 'paper', 'animation'],
   data () {
     return {
       size: 'cover',
-      scale: 2,
       side: '/static/images/book-side.jpg',
       top: '/static/images/book-top.jpg'
     }
@@ -76,6 +75,9 @@ export default {
     },
     boxDepth: function() {
       return this.depth * this.scale
+    },
+    animationStyleObject: function() {
+      return 'animation: ' + this.animation.duration + 's rotatingAnimation ' + this.animation.timing + ' infinite'
     }
   }
 }
@@ -84,10 +86,10 @@ export default {
 <style lang="scss" >
 @keyframes rotatingAnimation {
   0%{
-    transform: rotateX(0) translate3d(0,0,0px) rotateY(0deg)
+    transform: rotateY(0deg);
   }
   100% {
-    transform: rotateX(0) translate3d(0,0,0px) rotateY(360deg);
+    transform: rotateY(360deg);
   }
 }
 .container{
@@ -98,10 +100,10 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+
 }
 .box-holder{
   transform: rotateY(10deg);
-  animation: 10000ms rotatingAnimation linear infinite;
   transform-style: preserve-3d;
   > div {
     position: absolute;

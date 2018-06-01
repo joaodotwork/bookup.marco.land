@@ -1,0 +1,30 @@
+$bg: #f8f8f8;
+
+$fontColor: #4A4A4A;
+$secondaryColor: #979797;
+$inactiveColor: #D8D8D8;
+
+$controlBoxBg: #fff;
+
+$fontSize: 10px;
+$letterSpacing: 0.04em;
+
+$controlMargin: 4px;
+
+html, body{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  font-size: $fontSize;
+  line-height: 1.4;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: left;
+  text-align: center;
+  color: $fontColor;
+  letter-spacing: $letterSpacing;
+}
