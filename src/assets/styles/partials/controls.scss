@@ -14,7 +14,7 @@ $boxShadow: 0 0 2px rgba(0,0,0, 0.5);
     box-sizing: border-box;
     padding: 0.3rem 1rem 0.3rem 1rem;
     margin-bottom: $controlMargin;
-    width: 19rem;
+    width: 21rem;
     height: 20px;
     overflow: hidden;
     span.triangle {
@@ -81,9 +81,10 @@ $boxShadow: 0 0 2px rgba(0,0,0, 0.5);
   .type-input {
     -webkit-appearance: none;
     border: 0;
-    width: 2.25em;
+    width: 2.5em;
     font-size: 1rem;
     color: $fontColor;
+    text-align: center;
   }
   .type-input:focus {
     outline: none;
@@ -188,6 +189,7 @@ ul.dropdown {
   margin: $controlMargin*2 0 $controlMargin 0;
   padding: 0;
   list-style: none;
+  text-align: center;
   li {
     margin: 0;
     text-align: center;
@@ -223,4 +225,5 @@ ul.dropdown {
 span.subhead {
   margin-top: 1em;
   display: block;
+  text-align: center;
 }

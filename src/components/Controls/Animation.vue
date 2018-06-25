@@ -11,19 +11,23 @@
       </svg>
     </span>
     <div class="dimension-input">
-      <label for="width">X</label>
-      <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="xAxis">
+      <label for="width">x-axis</label>
+      <input class="slider" name="width" type="range" min="-180" max="180" step="1" v-model="xAxis">
       <input class="type-input" type="number" name="width-input" tabindex="5" v-model="xAxis">
-      <label for="width">Y</label>
-      <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="yAxis">
+      <span>deg</span>
+      <label for="width">y-axis</label>
+      <input class="slider" name="width" type="range" min="-180" max="180" step="1" v-model="yAxis">
       <input class="type-input" type="number" name="width-input" tabindex="6" v-model="yAxis">
-      <label for="width">Z</label>
-      <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="zAxis">
+      <span>deg</span>
+      <label for="width">z-axis</label>
+      <input class="slider" name="width" type="range" min="-180" max="180" step="1" v-model="zAxis">
       <input class="type-input" type="number" name="width-input" tabindex="7" v-model="zAxis">
-      <label for="width">Speed</label>
+      <span>deg</span>
+      <label for="width">speed</label>
       <input class="slider" name="width" type="range" min="0" max="30" step="1" v-model="sliderDuration">
       <input class="type-input" type="number" name="width-input" tabindex="8" v-model="sliderDuration">
-      <span class="subhead">Spin around (axis)</span>
+      <span>sec</span>
+      <span class="subhead">spin</span>
       <ul class="dropdown">
         <li
           class="small"
@@ -33,7 +37,7 @@
           @click="currentAxis = option"
         >{{ option }}</li>
       </ul>
-      <span class="subhead">Animation Timing</span>
+      <span class="subhead">animation timing</span>
       <ul class="dropdown">
         <li
           v-for="option, id in timingOptions"

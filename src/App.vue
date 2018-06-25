@@ -5,8 +5,8 @@
       <h1><span>·</span><span>·</span><span>·</span></h1>
     </div>
     </transition>
-    <Controls :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />
-    <Book :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
+    <Controls v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />
+    <Book v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
   </div>
 </template>
 
