@@ -54,6 +54,7 @@ $boxShadow: 0 0 2px rgba(0,0,0, 0.5);
       background: $inactiveColor;
       outline: none;
       transform: translateY(-2px);
+      transition: background .2s;
   }
   .slider::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -64,6 +65,9 @@ $boxShadow: 0 0 2px rgba(0,0,0, 0.5);
       box-shadow: $boxShadow;
       background: #fff;
       cursor: pointer;
+      &:hover {
+        background: $inactiveColor;
+      }
   }
   .slider::-moz-range-thumb {
       width: 8px;
@@ -83,6 +87,7 @@ $boxShadow: 0 0 2px rgba(0,0,0, 0.5);
   }
   .type-input:focus {
     outline: none;
+    background-color: rgba(0,0,0,0.05);
   }
   input[type=number]::-webkit-inner-spin-button,
   input[type=number]::-webkit-outer-spin-button {
@@ -160,6 +165,10 @@ $boxShadow: 0 0 2px rgba(0,0,0, 0.5);
   border-radius: 100% !important;
   box-shadow: $boxShadow !important;
   transform: translate(-4px, -4px) !important;
+  transition: background .2s;
+  &:hover {
+    background: $inactiveColor
+  }
 }
 .vc-chrome-alpha-wrap {
   height: $controlMargin !important;
@@ -201,4 +210,17 @@ ul.dropdown {
       cursor: default;
     }
   }
+  li.small {
+    width: auto;
+    padding-left: 0.75em;
+    padding-right: 0.75em;
+    margin-right: 0.5em;
+  }
+}
+.vc-chrome-fields .vc-input__input {
+  border-radius: 8px !important;
+}
+span.subhead {
+  margin-top: 1em;
+  display: block;
 }

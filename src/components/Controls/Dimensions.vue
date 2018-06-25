@@ -13,22 +13,22 @@
     <div class="dimension-input">
       <label for="width">width</label>
       <input class="slider" name="width" type="range" min="10" max="500" v-model="sliderWidth">
-      <input class="type-input" type="number" name="width-input" v-model="sliderWidth">
+      <input class="type-input" type="number" name="width-input" tabindex="1" v-model="sliderWidth">
     </div>
     <div class="dimension-input">
       <label for="width">height</label>
       <input class="slider" name="width" type="range" min="10" max="500" v-model="sliderHeight">
-      <input class="type-input" type="number" name="height-input" v-model="sliderHeight">
+      <input class="type-input" type="number" name="height-input" tabindex="2" v-model="sliderHeight">
     </div>
     <div class="dimension-input">
       <label for="width">depth</label>
       <input class="slider" name="width" type="range" min="1" max="500" v-model="sliderDepth">
-      <input class="type-input" type="number" name="depth-input" v-model="sliderDepth">
+      <input class="type-input" type="number" name="depth-input" tabindex="3" v-model="sliderDepth">
     </div>
     <div class="dimension-input">
       <label for="width">scale</label>
       <input class="slider" name="width" type="range" min="0.5" max="5" step="0.01" v-model="sliderScale">
-      <input class="type-input" type="number" name="scale-input" v-model="sliderScale">
+      <input class="type-input" type="number" name="scale-input" tabindex="4" v-model="sliderScale">
     </div>
   </div>
 </template>

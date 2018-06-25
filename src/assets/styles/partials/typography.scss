@@ -1,8 +1,8 @@
 ::selection {
-  background: none;
+  background: rgba(255,255,0,0.8);
 }
 ::-moz-selection {
-  background: none;
+  background: rgba(255,255,0,0.8);
 }
 
 h2, .hide-button {
@@ -15,4 +15,15 @@ h2, .hide-button {
   letter-spacing: 0.1em;
   text-align: center;
   cursor: pointer;
+}
+
+a, a:hover, a:visited, a:active {
+  color: blue;
+  text-decoration: none;
+}
+.credits p {
+  margin-bottom: 0.5em;
+}
+em {
+  font-style: italic;
 }

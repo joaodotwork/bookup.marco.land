@@ -1,7 +1,7 @@
 remotehost  = ssh.strato.de
 remotehosturl = $(remotehost)
 remoteuser  = www.marco-land.com
-remotedir   = /mnt/web016/d0/05/52565705/htdocs/marco-land/boockup.marco-land.com
+remotedir   = /mnt/web016/d0/05/52565705/htdocs/marco-land/boockup.marco.land
 flags = -r -t -u -z -p -P -h -i --delete
 excludes = --exclude '.DS_Store'
 

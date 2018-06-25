@@ -1,6 +1,6 @@
 <template>
   <div class="control-box" :class="{ 'open': isOpen, 'closed': !isOpen }">
-    <h2 @click="isOpen = !isOpen">Animation</h2>
+    <h2 @click="isOpen = !isOpen">Rotation</h2>
     <span class="triangle">
       <svg width="4px" height="6px" viewBox="0 0 4 6" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
           <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -11,9 +11,29 @@
       </svg>
     </span>
     <div class="dimension-input">
-      <label for="width">timing</label>
-      <input class="slider" name="width" type="range" min="1" max="30" step="1" v-model="sliderDuration">
+      <label for="width">X</label>
+      <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="xAxis">
+      <input class="type-input" type="number" name="width-input" v-model="xAxis">
+      <label for="width">Y</label>
+      <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="yAxis">
+      <input class="type-input" type="number" name="width-input" v-model="yAxis">
+      <label for="width">Z</label>
+      <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="zAxis">
+      <input class="type-input" type="number" name="width-input" v-model="zAxis">
+      <label for="width">Speed</label>
+      <input class="slider" name="width" type="range" min="0" max="30" step="1" v-model="sliderDuration">
       <input class="type-input" type="number" name="width-input" v-model="sliderDuration">
+      <span class="subhead">Spin around (axis)</span>
+      <ul class="dropdown">
+        <li
+          class="small"
+          v-for="option, id in axisOptions"
+          :key="id"
+          :class="{ 'active': option == currentAxis }"
+          @click="currentAxis = option"
+        >{{ option }}</li>
+      </ul>
+      <span class="subhead">Animation Timing</span>
       <ul class="dropdown">
         <li
           v-for="option, id in timingOptions"
@@ -31,10 +51,13 @@ import { EventBus } from '../../event-bus.js';
 
 export default {
   name: 'Animation',
-  props: ['animation'],
+  props: ['animation', 'axis'],
   data() {
     return {
       isOpen: false,
+      xAxis: this.axis.x,
+      yAxis: this.axis.y,
+      zAxis: this.axis.z,
       sliderDuration: this.animation.duration,
       timing: this.animation.timing,
       timingOptions: [
@@ -43,20 +66,37 @@ export default {
         'ease-in',
         'ease-out',
         'ease-in-out',
-      ]
+      ],
+      currentAxis: this.animation.axis,
+      axisOptions: ['X', 'Y', 'Z']
     }
   },
   watch: {
     sliderDuration: function() {
-      this.updateAnimation(this.sliderDuration, this.timing)
+      this.updateAnimation(this.sliderDuration, this.timing, this.currentAxis)
     },
     timing: function() {
-      this.updateAnimation(this.sliderDuration, this.timing)
+      this.updateAnimation(this.sliderDuration, this.timing, this.currentAxis)
     },
+    currentAxis: function() {
+      this.updateAnimation(this.sliderDuration, this.timing, this.currentAxis)
+    },
+    xAxis: function() {
+      this.updateAxis(this.xAxis, this.yAxis, this.zAxis)
+    },
+    yAxis: function() {
+      this.updateAxis(this.xAxis, this.yAxis, this.zAxis)
+    },
+    zAxis: function() {
+      this.updateAxis(this.xAxis, this.yAxis, this.zAxis)
+    }
   },
   methods: {
-    updateAnimation(duration, timing) {
-      EventBus.$emit('animation-changed', duration, timing)
+    updateAnimation(duration, timing, axis) {
+      EventBus.$emit('animation-changed', duration, timing, axis)
+    },
+    updateAxis(x, y, z) {
+      EventBus.$emit('axis-changed', x, y, z)
     }
   }
 }

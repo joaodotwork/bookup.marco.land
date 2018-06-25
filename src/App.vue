@@ -1,7 +1,7 @@
 <template>
   <div id="app" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
-    <Controls :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" />
-    <Book :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" />
+    <Controls :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />
+    <Book :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
   </div>
 </template>
 
@@ -33,7 +33,13 @@ export default {
       spine: '/static/images/book-spine.jpg',
       animation: {
         duration: 10,
-        timing: 'linear'
+        timing: 'linear',
+        axis: 'Y'
+      },
+      axis: {
+        x: 0,
+        y: 0,
+        z: 0
       }
     }
   },
@@ -59,16 +65,23 @@ export default {
     onBgChange(colors) {
       this.background = colors.rgba;
     },
-    onAnimChange(duration, timing) {
+    onAnimChange(duration, timing, axis) {
       this.animation.duration = duration;
       this.animation.timing = timing;
+      this.animation.axis = axis;
+    },
+    onAxisChange(x, y, z) {
+      this.axis.x = x;
+      this.axis.y = y;
+      this.axis.z = z;
     }
   },
   created() {
     EventBus.$on('dimension-changed', this.updateDimensions);
     EventBus.$on('texture-changed', this.processFile);
     EventBus.$on('background-changed', this.onBgChange);
-    EventBus.$on('animation-changed', this.onAnimChange)
+    EventBus.$on('animation-changed', this.onAnimChange),
+    EventBus.$on('axis-changed', this.onAxisChange)
   }
 }
 </script>
