@@ -1,5 +1,10 @@
 <template>
   <div id="app" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
+    <transition name="fade">
+    <div v-if="!hasLoaded" id="preloader" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
+      <h1>Boockup<span>.</span><span>.</span><span>.</span></h1>
+    </div>
+    </transition>
     <Controls :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />
     <Book :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
   </div>
@@ -18,6 +23,7 @@ export default {
   },
   data () {
     return {
+      hasLoaded: false,
       background: {
         r: '248',
         g: '231',
@@ -77,15 +83,65 @@ export default {
     }
   },
   created() {
+    const vm = this;
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function(){ vm.hasLoaded = true }, 2000)
+    }, true);
     EventBus.$on('dimension-changed', this.updateDimensions);
     EventBus.$on('texture-changed', this.processFile);
     EventBus.$on('background-changed', this.onBgChange);
-    EventBus.$on('animation-changed', this.onAnimChange),
-    EventBus.$on('axis-changed', this.onAxisChange)
+    EventBus.$on('animation-changed', this.onAnimChange);
+    EventBus.$on('axis-changed', this.onAxisChange);
   }
 }
 </script>
 
 <style lang="scss">
-
+#preloader {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  h1 {
+    font-size: 5vw;
+    color: black;
+    transform: translateY(-0.25em);
+    letter-spacing: -0.025em;
+    span {
+        animation-name: blink;
+        animation-duration: 1.4s;
+        animation-iteration-count: infinite;
+        animation-fill-mode: both;
+    }
+    span:nth-child(2) {
+        animation-delay: .2s;
+    }
+    span:nth-child(3) {
+        animation-delay: .4s;
+    }
+  }
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
+}
+@keyframes blink {
+    0% {
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+}
 </style>
