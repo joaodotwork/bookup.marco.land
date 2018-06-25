@@ -2,7 +2,7 @@
   <div id="app" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
     <transition name="fade">
     <div v-if="!hasLoaded" id="preloader" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
-      <h1>Boockup<span>.</span><span>.</span><span>.</span></h1>
+      <h1><span>·</span><span>·</span><span>·</span></h1>
     </div>
     </transition>
     <Controls :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />

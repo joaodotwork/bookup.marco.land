@@ -27,7 +27,7 @@ export default {
   data() {
     return {
       isOpen: false,
-      colors: '#194d33'
+      colors: this.background
     }
   },
   methods: {

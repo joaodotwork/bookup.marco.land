@@ -13,16 +13,16 @@
     <div class="dimension-input">
       <label for="width">X</label>
       <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="xAxis">
-      <input class="type-input" type="number" name="width-input" v-model="xAxis">
+      <input class="type-input" type="number" name="width-input" tabindex="5" v-model="xAxis">
       <label for="width">Y</label>
       <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="yAxis">
-      <input class="type-input" type="number" name="width-input" v-model="yAxis">
+      <input class="type-input" type="number" name="width-input" tabindex="6" v-model="yAxis">
       <label for="width">Z</label>
       <input class="slider" name="width" type="range" min="0" max="360" step="1" v-model="zAxis">
-      <input class="type-input" type="number" name="width-input" v-model="zAxis">
+      <input class="type-input" type="number" name="width-input" tabindex="7" v-model="zAxis">
       <label for="width">Speed</label>
       <input class="slider" name="width" type="range" min="0" max="30" step="1" v-model="sliderDuration">
-      <input class="type-input" type="number" name="width-input" v-model="sliderDuration">
+      <input class="type-input" type="number" name="width-input" tabindex="8" v-model="sliderDuration">
       <span class="subhead">Spin around (axis)</span>
       <ul class="dropdown">
         <li
