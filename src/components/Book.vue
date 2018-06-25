@@ -12,23 +12,23 @@
           ></div>
           <div  class="box--side-left"
                 :style="{
-                  'width': boxDepth+2 + 'px',
-                  'height': boxHeight + 'px',
+                  'width': boxDepth+1 + 'px',
+                  'height': boxHeight+1 + 'px',
                   'background': 'url(' + spine + ')',
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(' + boxDepth*-0.5 + 'px, 0, ' + boxDepth*-0.5 + 'px) rotateY(-90deg)'
                   }"
           ></div>
           <div  class="box--side-right"
                 :style="{
-                  'width': boxDepth+2 + 'px',
-                  'height': boxHeight + 'px',
+                  'width': boxDepth+1 + 'px',
+                  'height': boxHeight+1 + 'px',
                   'background': 'url(' + side + ') no-repeat center center',
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(' + (boxWidth-(boxDepth*0.5)) + 'px, 0px,' + boxDepth*-0.5 + 'px) rotateY(90deg)'
                   }"
           ></div>
           <div  class="box--top"
                 :style="{
-                  'width': boxWidth + 'px',
+                  'width': boxWidth+1 + 'px',
                   'height': boxDepth + 'px',
                   'background': '#00f',
                   'background': 'url(' + top + ') no-repeat center center',
@@ -37,7 +37,7 @@
           ></div>
           <div  class="box--bottom"
                 :style="{
-                  'width': boxWidth + 'px',
+                  'width': boxWidth+1 + 'px',
                   'height': boxDepth + 'px',
                   'background': '#000',
                   'background': 'url(' + top + ') no-repeat center center',
@@ -46,8 +46,8 @@
           ></div>
           <div  class="box--back"
                 :style="{
-                  'width': boxWidth + 'px',
-                  'height': boxHeight + 'px',
+                  'width': boxWidth+1 + 'px',
+                  'height': boxHeight+1 + 'px',
                   'background': 'url(' + back + ')',
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(0,0, -' + boxDepth + 'px) rotateY(180deg)'
                   }"
@@ -133,7 +133,10 @@ export default {
     left: 0;
     background-size: cover !important;
     background-position: center center;
-    backface-visibility: hidden;
+    backface-visibility: visible;
+  }
+  .box--top, .box--bottom, .box--side-right {
+    background-size: 100%  100% !important;
   }
 }
 
