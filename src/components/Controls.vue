@@ -5,7 +5,7 @@
     <Background :background="background" />
     <Animation :animation="animation" :axis="axis" />
     <Credits />
-    <Export :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :top="top" :background="background" :animation="animation" :axis="axis" />
+    <Export :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :top="top" :side="side" :background="background" :animation="animation" :axis="axis" />
     <div class="control-box hide-button" @click="controlsShow = !controlsShow">
       <span v-if="controlsShow">Hide settings</span>
       <span v-else>Show settings</span>
@@ -26,7 +26,7 @@ export default {
   components: {
     Dimensions, Textures, Background, Animation, Credits, Export
   },
-  props: ['width', 'height', 'depth', 'scale', 'cover', 'back', 'spine', 'top', 'background', 'animation', 'axis'],
+  props: ['width', 'height', 'depth', 'scale', 'cover', 'back', 'spine', 'top', 'side', 'background', 'animation', 'axis'],
   data() {
     return {
       controlsShow: true

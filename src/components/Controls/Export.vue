@@ -1,6 +1,6 @@
 <template>
   <div class="control-box textbox-control closed">
-    <h2 @click="exportHTML">Export</h2>
+    <h2 @click="exportHTML">Export as HTML/CSS</h2>
   </div>
 </template>
 
@@ -10,7 +10,7 @@ import { saveAs } from 'file-saver';
 
 export default {
   name: 'Export',
-  props: ['width', 'height', 'depth', 'scale', 'cover', 'back', 'spine', 'top', 'background', 'animation', 'axis'],
+  props: ['width', 'height', 'depth', 'scale', 'cover', 'back', 'spine', 'top', 'side', 'background', 'animation', 'axis'],
   data() {
     return {
       html: `<!doctype html>
@@ -236,6 +236,7 @@ html, body {
       zip.file("images/book-cover.jpg", this.toDataUrl(this.cover));
       zip.file("images/book-back.jpg", this.toDataUrl(this.back));
       zip.file("images/book-top.jpg", this.toDataUrl(this.top));
+      zip.file("images/book-side.jpg", this.toDataUrl(this.side));
       zip.generateAsync({type:"blob"}).then(function(content) {
         saveAs(content, "Boockup.zip");
       }, function (e) {
