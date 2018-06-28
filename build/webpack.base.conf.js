@@ -8,6 +8,7 @@ function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
 
+var webpack = require("webpack");
 
 
 module.exports = {
@@ -15,6 +16,11 @@ module.exports = {
   entry: {
     app: './src/main.js'
   },
+  plugins: [
+    new webpack.ProvidePlugin({
+      JSZip: "jszip"
+    })
+  ],
   output: {
     path: config.build.assetsRoot,
     filename: '[name].js',
