@@ -1,8 +1,8 @@
 <template>
   <div class="container">
     <div :style="axisStyleObject">
-      <div class="box-holder" :style="animationStyleObject">
-          <div  class="box--front"
+      <div class="book-container" :style="animationStyleObject">
+          <div  class="book-front"
                 :style="{
                   'width': boxWidth + 'px',
                   'height': boxHeight + 'px',
@@ -10,7 +10,7 @@
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(0,0,0) rotateY(0deg)'
                   }"
           ></div>
-          <div  class="box--side-left"
+          <div  class="book-side-left"
                 :style="{
                   'width': boxDepth+1 + 'px',
                   'height': boxHeight+1 + 'px',
@@ -18,7 +18,7 @@
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(' + boxDepth*-0.5 + 'px, 0, ' + boxDepth*-0.5 + 'px) rotateY(-90deg)'
                   }"
           ></div>
-          <div  class="box--side-right"
+          <div  class="book-side-right"
                 :style="{
                   'width': boxDepth+1 + 'px',
                   'height': boxHeight+1 + 'px',
@@ -26,7 +26,7 @@
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(' + (boxWidth-(boxDepth*0.5)) + 'px, 0px,' + boxDepth*-0.5 + 'px) rotateY(90deg)'
                   }"
           ></div>
-          <div  class="box--top"
+          <div  class="book-top"
                 :style="{
                   'width': boxWidth+1 + 'px',
                   'height': boxDepth + 'px',
@@ -35,7 +35,7 @@
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px, ' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(0px, ' + boxDepth*-0.5 + 'px, '+ -boxDepth*0.5 + 'px) rotateX(90deg)'
                   }"
           ></div>
-          <div  class="box--bottom"
+          <div  class="book-bottom"
                 :style="{
                   'width': boxWidth+1 + 'px',
                   'height': boxDepth + 'px',
@@ -44,7 +44,7 @@
                   'transform': 'translate3d(' + boxWidth * -0.5 + 'px ,' + boxHeight * -0.5 + 'px ,'+boxDepth/2+'px) translate3d(0px, ' + (boxHeight - (boxDepth*0.5)) + 'px, ' + boxDepth*-0.5 + 'px) rotateX(-90deg)'
                   }"
           ></div>
-          <div  class="box--back"
+          <div  class="book-back"
                 :style="{
                   'width': boxWidth+1 + 'px',
                   'height': boxHeight+1 + 'px',
@@ -125,18 +125,23 @@ export default {
     transform-style: preserve-3d;
   }
 }
-.box-holder{
+.book-container{
   transform-style: preserve-3d;
   > div {
     position: absolute;
     top: 0;
     left: 0;
     background-size: cover !important;
-    background-position: center center;
+    background-position: center center !important;
     backface-visibility: visible;
   }
-  .box--top, .box--bottom, .box--side-right {
-    background-size: 100%  100% !important;
+  .book-top, .book-bottom, .book-side-right {
+    background-size: auto  auto !important;
+    background-repeat: repeat !important;
+    background-position: top left !important;
+  }
+  .book-top, {
+    background-position: bottom right !important;
   }
 }
 

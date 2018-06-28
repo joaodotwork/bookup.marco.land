@@ -12,8 +12,8 @@
     </span>
     <div class="credits">
       <p>This tool was built for <a class="external" href="http://nodeberlin.com/" target="_blank">NODE Berlin Oslo</a> to present book designs, now available for public use.</p>
-      <p>Book: <em>The Midden</em>, designed by <a class="external" href="http://nodeberlin.com/" target="_blank">NODE Berlin Oslo</a></p>
-      <p>Development: <a class="external" href="http://marco.land" target="_blank">Marco Land</a></p>
+      <p>Book: <br><em>Public Space? Lost and Found</em> (MIT Press) designed by <a class="external" href="http://nodeberlin.com/" target="_blank">NODE Berlin Oslo</a></p>
+      <p>Development: <br><a class="external" href="http://marco.land" target="_blank">Marco Land</a></p>
       <p><a href="http://marco.land/imprint" target="_blank">Imprint</a></p>
     </div>
   </div>

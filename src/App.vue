@@ -25,15 +25,15 @@ export default {
     return {
       hasLoaded: false,
       background: {
-        r: '248',
-        g: '231',
-        b: '28',
+        r: '0',
+        g: '114',
+        b: '255',
         a: '1'
       },
-      width: 149,
-      height: 200,
-      depth: 20,
-      scale: 2.5,
+      width: 200,
+      height: 270,
+      depth: 29,
+      scale: 2,
       cover: '/static/images/book-cover.jpg',
       back: '/static/images/book-back.jpg',
       spine: '/static/images/book-spine.jpg',
@@ -110,7 +110,7 @@ export default {
   align-items: center;
   h1 {
     font-size: 5vw;
-    color: black;
+    color: white;
     transform: translateY(-0.25em);
     letter-spacing: -0.025em;
     span {
