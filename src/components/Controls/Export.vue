@@ -14,6 +14,7 @@ export default {
   data() {
     return {
       html: `<!doctype html>
+<!-- Created with http://boockup.marco.land -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -35,6 +36,7 @@ export default {
       </div>
     </div>
   </div>
+  <a href="http://boockup.marco.land"><div id="credit">Created with Boockup</div></a>
 </body>
 </html>`
     }
@@ -121,8 +123,17 @@ export default {
 html, body {
   margin: 0;
   padding: 0;
-  background-color: blue;
   background-color: rgba(`+ this.background.r +`, `+ this.background.g +`, `+ this.background.b +`, `+ this.background.a +`);
+  font-family: Helvetica Neue,Helvetica,Arial,sans-serif;
+  color: #4a4a4a;
+  text-transform: uppercase;
+  font-size: 10px;
+  text-align: center;
+  letter-spacing: .1em;
+}
+a {
+  color: inherit;
+  text-decoration: none;
 }
 .container {
   width: 100vw;
@@ -210,6 +221,23 @@ html, body {
   height: `+this.boxHeight + `px;
   -webkit-transform: translate3d(` + this.boxWidth * -0.5 + `px ,` + this.boxHeight * -0.5 + `px ,`+this.boxDepth/2+`px) translate3d(0,0, -` + this.boxDepth + `px) rotateY(180deg);
   transform: translate3d(` + this.boxWidth * -0.5 + `px ,` + this.boxHeight * -0.5 + `px ,`+this.boxDepth/2+`px) translate3d(0,0, -` + this.boxDepth + `px) rotateY(180deg);
+}
+#credit {
+  position: fixed;
+  bottom: 1em;
+  right: 1em;
+  z-index: 99;
+  background-color: #fff;
+  border-radius: 8px;
+  box-sizing: border-box;
+  padding: .3rem 1rem;
+  width: 21rem;
+  height: 20px;
+  -webkit-transition: background .2s;
+  transition: background .2s;
+}
+#credit:hover {
+  background-color: #d8d8d8;
 }
       `;
     }
