@@ -151,7 +151,7 @@ html, body {
 .book-container {
   -webkit-transform-style: preserve-3d;
   transform-style: preserve-3d;
-  -webkitanimation: ` + this.animationStyleObject + `;
+  -webkit-animation: ` + this.animationStyleObject + `;
   animation: ` + this.animationStyleObject + `;
 }
 .book-container > div {
