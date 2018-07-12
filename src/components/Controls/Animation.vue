@@ -107,7 +107,15 @@ export default {
     },
     updateAxis(x, y, z) {
       EventBus.$emit('axis-changed', x, y, z)
+    },
+    onAxisChange(x, y, z) {
+      this.xAxis = x;
+      this.yAxis = y;
+      this.zAxis = z;
     }
+  },
+  created() {
+    EventBus.$on('axis-changed', this.onAxisChange);
   }
 }
 </script>
