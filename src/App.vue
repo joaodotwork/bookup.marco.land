@@ -5,7 +5,7 @@
       <h1><span>·</span><span>·</span><span>·</span></h1>
     </div>
     </transition>
-    <Controls v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />
+    <Controls v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :top="top" :side="side" :background="background" :animation="animation" :axis="axis" />
     <Book v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
   </div>
 </template>
@@ -37,6 +37,8 @@ export default {
       cover: '/static/images/book-cover.jpg',
       back: '/static/images/book-back.jpg',
       spine: '/static/images/book-spine.jpg',
+      top: '/static/images/book-top.jpg',
+      side: '/static/images/book-side.jpg',
       animation: {
         duration: 10,
         timing: 'linear',
