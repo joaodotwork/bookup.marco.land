@@ -1,11 +1,11 @@
 <template>
-  <div id="app" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
+  <div id="app" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}" :class="{ 'mousedown' : mousedown}" >
     <transition name="fade">
     <div v-if="!hasLoaded" id="preloader" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
       <h1><span>·</span><span>·</span><span>·</span></h1>
     </div>
     </transition>
-    <Controls v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :top="top" :side="side" :background="background" :animation="animation" :axis="axis" />
+    <Controls v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :background="background" :animation="animation" :axis="axis" />
     <Book v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
   </div>
 </template>
@@ -37,8 +37,6 @@ export default {
       cover: '/static/images/book-cover.jpg',
       back: '/static/images/book-back.jpg',
       spine: '/static/images/book-spine.jpg',
-      top: '/static/images/book-top.jpg',
-      side: '/static/images/book-side.jpg',
       animation: {
         duration: 10,
         timing: 'linear',
@@ -48,7 +46,8 @@ export default {
         x: 0,
         y: 0,
         z: 0
-      }
+      },
+      mousedown: false
     }
   },
   methods: {
@@ -82,6 +81,9 @@ export default {
       this.axis.x = x;
       this.axis.y = y;
       this.axis.z = z;
+    },
+    onMousedownUp(mousedown) {
+      this.mousedown = mousedown
     }
   },
   created() {
@@ -94,6 +96,7 @@ export default {
     EventBus.$on('background-changed', this.onBgChange);
     EventBus.$on('animation-changed', this.onAnimChange);
     EventBus.$on('axis-changed', this.onAxisChange);
+    EventBus.$on('mousedown', this.onMousedownUp);
   }
 }
 </script>
@@ -128,6 +131,9 @@ export default {
         animation-delay: .4s;
     }
   }
+}
+.mousedown {
+  cursor: grabbing;
 }
 .fade-enter-active, .fade-leave-active {
   transition: opacity .5s;
