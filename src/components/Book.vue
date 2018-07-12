@@ -1,7 +1,7 @@
 <template>
-  <div class="container">
+  <div class="container" @mousemove="onMouseMove" @mouseup="onMouseUp">
     <div :style="axisStyleObject">
-      <div class="book-container" :style="animationStyleObject">
+      <div class="book-container" :style="animationStyleObject" @mousedown="onMouseDown" @mouseup="onMouseUp">
           <div  class="book-front"
                 :style="{
                   'width': boxWidth + 'px',
@@ -58,6 +58,8 @@
 </template>
 
 <script>
+import { EventBus } from '../event-bus.js';
+
 export default {
   name: 'Book',
   props: ['width', 'height', 'depth', 'scale', 'cover', 'back', 'spine', 'paper', 'animation', 'axis'],
@@ -65,7 +67,17 @@ export default {
     return {
       size: 'cover',
       side: '/static/images/book-side.jpg',
-      top: '/static/images/book-top.jpg'
+      top: '/static/images/book-top.jpg',
+      mousedown: false,
+      playState: 'running',
+      dragStartCoordinates: {
+        x: null,
+        y: null
+      },
+      originalStartCoordinates: {
+        x: null,
+        y: null
+      }
     }
   },
   computed: {
@@ -82,7 +94,44 @@ export default {
       return 'transform: rotateX(' + this.axis.x + 'deg) ' + 'rotateY(' + this.axis.y + 'deg) ' + 'rotateZ(' + this.axis.z + 'deg)'
     },
     animationStyleObject: function() {
-      return 'animation: ' + this.animation.duration + 's rotatingAnimation' + this.animation.axis +' ' + this.animation.timing + ' infinite'
+      return 'animation: ' + this.animation.duration + 's rotatingAnimation' + this.animation.axis +' ' + this.animation.timing + ' infinite ' + this.playState
+    }
+  },
+  watch: {
+    axis:{
+      handler: function() {
+        this.updateAxis(parseInt(this.axis.x), parseInt(this.axis.y), parseInt(this.axis.z));
+      },
+      deep: true
+    },
+    mousedown: function() {
+      EventBus.$emit('mousedown', this.mousedown)
+    }
+  },
+  methods: {
+    onMouseDown: function(e) {
+      this.mousedown = true;
+      this.playState = 'paused';
+      this.dragStartCoordinates.x = e.clientX;
+      this.dragStartCoordinates.y = e.clientY;
+      this.originalStartCoordinates.x = this.axis.y;
+      this.originalStartCoordinates.y = this.axis.x;
+    },
+    onMouseUp: function(e) {
+      this.mousedown = false;
+      this.playState = 'running';
+      while (this.axis.x < -180) { this.axis.x += 360 }
+      while (this.axis.x > 180) { this.axis.x -= 360 }
+      while (this.axis.y < -180) { this.axis.y += 360 }
+      while (this.axis.y > 180) { this.axis.y -= 360 }
+    },
+    onMouseMove: function(e) {
+      if (!this.mousedown) { return }
+      this.axis.x = this.originalStartCoordinates.y + (this.dragStartCoordinates.y - e.clientY);
+      this.axis.y = this.originalStartCoordinates.x - (this.dragStartCoordinates.x - e.clientX);
+    },
+    updateAxis(x, y, z) {
+      EventBus.$emit('axis-changed', x, y, z)
     }
   }
 }
@@ -126,6 +175,7 @@ export default {
   }
 }
 .book-container{
+  cursor: grab;
   transform-style: preserve-3d;
   > div {
     position: absolute;
@@ -144,5 +194,7 @@ export default {
     background-position: bottom right !important;
   }
 }
-
+.mousedown .book-container {
+  cursor: grabbing;
+}
 </style>
