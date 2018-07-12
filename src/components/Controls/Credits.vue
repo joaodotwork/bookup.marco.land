@@ -1,6 +1,6 @@
 <template>
   <div class="control-box textbox-control" :class="{ 'open': isOpen, 'closed': !isOpen }">
-    <h2 @click="isOpen = !isOpen">Credits</h2>
+    <h2 @click="isOpen = !isOpen">Credits / About</h2>
     <span class="triangle">
       <svg width="4px" height="6px" viewBox="0 0 4 6" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
           <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -11,7 +11,7 @@
       </svg>
     </span>
     <div class="credits">
-      <p>This tool was built for <a class="external" href="http://nodeberlin.com/" target="_blank">NODE Berlin Oslo</a> to present book designs, now available for public use.</p>
+      <p>This tool was built for <a class="external" href="http://nodeberlin.com/" target="_blank">NODE Berlin Oslo</a> to present book cover designs, now available for public use.</p>
       <p>Book: <br><em>Public Space? Lost and Found</em> (MIT Press) designed by <a class="external" href="http://nodeberlin.com/" target="_blank">NODE Berlin Oslo</a></p>
       <p>Development: <br><a class="external" href="http://marco.land" target="_blank">Marco Land</a></p>
       <p><a href="http://marco.land/imprint" target="_blank">Imprint</a></p>
