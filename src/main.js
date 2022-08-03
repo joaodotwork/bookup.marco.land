@@ -8,7 +8,7 @@ Vue.config.productionTip = false;
 Vue.config.devtools = true;
 
 Vue.use(VueMatomo, {
-  host: "https://stats.ungroup.group",
+  host: "https://stats.marco.land",
   siteId: 10
 });
 
