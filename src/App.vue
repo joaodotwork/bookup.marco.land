@@ -16,8 +16,9 @@
     :class="{ mousedown: mousedown }"
   >
     <marquee v-if="showMarquee"
-      >Also check out&nbsp;
-      <a href="https://mockup.marco.land/" target="_blank">this tool</a>&nbsp;
+      >✨ Also check out&nbsp;
+      <a href="https://mockup.marco.land/" target="_blank">this tool</a
+      >&nbsp;✨&nbsp;
       <span @click="showMarquee = false" class="close">×</span></marquee
     >
     <transition name="fade">
@@ -41,6 +42,7 @@
       </div>
     </transition>
     <Controls
+      :class="{ 'show-marquee': showMarquee }"
       v-if="hasLoaded"
       :width="width"
       :height="height"
