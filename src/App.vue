@@ -1,48 +1,112 @@
 <template>
-  <div id="app" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}" :class="{ 'mousedown' : mousedown}" >
+  <div
+    id="app"
+    :style="{
+      'background-color':
+        'rgba(' +
+        background.r +
+        ', ' +
+        background.g +
+        ', ' +
+        background.b +
+        ', ' +
+        background.a +
+        ' )'
+    }"
+    :class="{ mousedown: mousedown }"
+  >
+    <marquee v-if="showMarquee"
+      >Also check out&nbsp;
+      <a href="https://mockup.marco.land/" target="_blank">this tool</a>&nbsp;
+      <span @click="showMarquee = false" class="close">×</span></marquee
+    >
     <transition name="fade">
-    <div v-if="!hasLoaded" id="preloader" :style="{'background-color': 'rgba('+ background.r + ', '+ background.g +', '+ background.b +', '+ background.a +' )'}">
-      <h1><span>·</span><span>·</span><span>·</span></h1>
-    </div>
+      <div
+        v-if="!hasLoaded"
+        id="preloader"
+        :style="{
+          'background-color':
+            'rgba(' +
+            background.r +
+            ', ' +
+            background.g +
+            ', ' +
+            background.b +
+            ', ' +
+            background.a +
+            ' )'
+        }"
+      >
+        <h1><span>·</span><span>·</span><span>·</span></h1>
+      </div>
     </transition>
-    <Controls v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :top="top" :side="side" :background="background" :animation="animation" :axis="axis" />
-    <Book v-if="hasLoaded" :width="width" :height="height" :depth="depth" :scale="scale" :cover="cover" :back="back" :spine="spine" :animation="animation" :axis="axis" />
+    <Controls
+      v-if="hasLoaded"
+      :width="width"
+      :height="height"
+      :depth="depth"
+      :scale="scale"
+      :cover="cover"
+      :back="back"
+      :spine="spine"
+      :top="top"
+      :side="side"
+      :background="background"
+      :animation="animation"
+      :axis="axis"
+    />
+    <Book
+      v-if="hasLoaded"
+      :width="width"
+      :height="height"
+      :depth="depth"
+      :scale="scale"
+      :cover="cover"
+      :back="back"
+      :spine="spine"
+      :animation="animation"
+      :axis="axis"
+    />
   </div>
 </template>
 
 <script>
-import { EventBus } from './event-bus.js';
+import { EventBus } from "./event-bus.js";
 
-import Book from './components/Book'
-import Controls from './components/Controls'
+import Book from "./components/Book";
+import Controls from "./components/Controls";
+import Marquee from "./components/Marquee";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    Book, Controls
+    Book,
+    Controls,
+    Marquee
   },
-  data () {
+  data() {
     return {
+      showMarquee: true,
       hasLoaded: false,
       background: {
-        r: '0',
-        g: '114',
-        b: '255',
-        a: '1'
+        r: "0",
+        g: "114",
+        b: "255",
+        a: "1"
       },
       width: 200,
       height: 270,
       depth: 29,
       scale: 2,
-      cover: '/static/images/book-cover.jpg',
-      back: '/static/images/book-back.jpg',
-      spine: '/static/images/book-spine.jpg',
-      top: '/static/images/book-top.jpg',
-      side: '/static/images/book-side.jpg',
+      cover: "/static/images/book-cover.jpg",
+      back: "/static/images/book-back.jpg",
+      spine: "/static/images/book-spine.jpg",
+      top: "/static/images/book-top.jpg",
+      side: "/static/images/book-side.jpg",
       animation: {
         duration: 10,
-        timing: 'linear',
-        axis: 'Y'
+        timing: "linear",
+        axis: "Y"
       },
       axis: {
         x: 0,
@@ -50,7 +114,7 @@ export default {
         z: 0
       },
       mousedown: false
-    }
+    };
   },
   methods: {
     updateDimensions(width, height, depth, scale) {
@@ -60,15 +124,15 @@ export default {
       this.scale = scale;
     },
     processFile(event, param) {
-      switch(param) {
-          case 'cover':
-              this.cover = URL.createObjectURL(event.target.files[0]);
-              break;
-          case 'back':
-              this.back = URL.createObjectURL(event.target.files[0]);
-              break;
-          default:
-              this.spine = URL.createObjectURL(event.target.files[0]);
+      switch (param) {
+        case "cover":
+          this.cover = URL.createObjectURL(event.target.files[0]);
+          break;
+        case "back":
+          this.back = URL.createObjectURL(event.target.files[0]);
+          break;
+        default:
+          this.spine = URL.createObjectURL(event.target.files[0]);
       }
     },
     onBgChange(colors) {
@@ -85,22 +149,28 @@ export default {
       this.axis.z = z;
     },
     onMousedownUp(mousedown) {
-      this.mousedown = mousedown
+      this.mousedown = mousedown;
     }
   },
   created() {
     const vm = this;
-    window.addEventListener('DOMContentLoaded', function() {
-      setTimeout(function(){ vm.hasLoaded = true }, 2000)
-    }, true);
-    EventBus.$on('dimension-changed', this.updateDimensions);
-    EventBus.$on('texture-changed', this.processFile);
-    EventBus.$on('background-changed', this.onBgChange);
-    EventBus.$on('animation-changed', this.onAnimChange);
-    EventBus.$on('axis-changed', this.onAxisChange);
-    EventBus.$on('mousedown', this.onMousedownUp);
+    window.addEventListener(
+      "DOMContentLoaded",
+      function() {
+        setTimeout(function() {
+          vm.hasLoaded = true;
+        }, 2000);
+      },
+      true
+    );
+    EventBus.$on("dimension-changed", this.updateDimensions);
+    EventBus.$on("texture-changed", this.processFile);
+    EventBus.$on("background-changed", this.onBgChange);
+    EventBus.$on("animation-changed", this.onAnimChange);
+    EventBus.$on("axis-changed", this.onAxisChange);
+    EventBus.$on("mousedown", this.onMousedownUp);
   }
-}
+};
 </script>
 
 <style lang="scss">
@@ -121,37 +191,38 @@ export default {
     transform: translateY(-0.25em);
     letter-spacing: -0.025em;
     span {
-        animation-name: blink;
-        animation-duration: 1.4s;
-        animation-iteration-count: infinite;
-        animation-fill-mode: both;
+      animation-name: blink;
+      animation-duration: 1.4s;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
     }
     span:nth-child(2) {
-        animation-delay: .2s;
+      animation-delay: 0.2s;
     }
     span:nth-child(3) {
-        animation-delay: .4s;
+      animation-delay: 0.4s;
     }
   }
 }
 .mousedown {
   cursor: grabbing;
 }
-.fade-enter-active, .fade-leave-active {
-  transition: opacity .5s;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
 }
 @keyframes blink {
-    0% {
-      opacity: 0;
-    }
-    20% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-    }
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 </style>
