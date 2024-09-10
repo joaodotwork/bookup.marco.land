@@ -8,4 +8,4 @@ NIXPACKS_NODE_VERSION = "16"
 cmds = ["npm install"]
 
 [phases.build]
-cmds = ["npm run generate"]
+cmds = ["npm run build"]
