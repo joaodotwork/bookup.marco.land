@@ -2,10 +2,10 @@ providers = ["node"]
 
 [variables]
 NODE_ENV = "production"
-NIXPACKS_NODE_VERSION = "18"
+NIXPACKS_NODE_VERSION = "16"
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["yarn install"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["yarn build"]
