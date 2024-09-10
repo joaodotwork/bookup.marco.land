@@ -2,7 +2,7 @@ providers = ["node"]
 
 [variables]
 NODE_ENV = "production"
-NIXPACKS_NODE_VERSION = "16"
+NIXPACKS_NODE_VERSION = "18"
 
 [phases.install]
 cmds = ["npm install"]
