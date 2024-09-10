@@ -17,7 +17,7 @@
   >
     <marquee v-if="showMarquee"
       >✨ Also check out&nbsp;
-      <a href="https://mockup.marco.land/" target="_blank">this tool</a
+      <a href="https://repro.marco.land/" target="_blank">this tool</a
       >&nbsp;✨&nbsp;
       <span @click="showMarquee = false" class="close">×</span></marquee
     >
