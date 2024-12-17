@@ -1,3 +1,7 @@
+---
+title: 'Bookup — License'
+---
+
 # Bookup License
 
 Copyright © 2024 Marco Land
