@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const { showSidebar } = storeToRefs(useAppStore())
 const { dimensions, rotation, animation } = storeToRefs(useBookStore())
+const openModal = ref(false)
+
 const timings = ref([
   'linear',
   'ease',
@@ -35,11 +37,12 @@ const scale = computed({
   <aside class="h-[100svh] border-l border-[var(--ui-border)] overflow-auto bg-white dark:bg-[var(--color-gray-950)]">
     <BSection>
       <UButton size="sm" :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'" variant="soft" color="neutral" class="w-7" @click="showSidebar = !showSidebar" />
-      <UModal>
+      <UModal v-model:open="openModal">
         <UButton size="sm" icon="i-mdi-information" variant="soft" label="Bookup" color="neutral" />
         <template #content>
-          <div class="p-3 text-xs">
+          <div class="p-4 text-xs">
             <ContentDoc />
+            <UButton size="sm" class="absolute top-3 right-3" color="neutral" label="Close" @click="openModal = false" />
           </div>
         </template>
       </UModal>

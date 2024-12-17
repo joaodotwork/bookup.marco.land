@@ -2,7 +2,6 @@
 title: 'Bookup'
 description: 'Bookup is a social media platform for book lovers. Share your favorite books and discover new ones.'
 ---
-# Info
 <a href="https://github.com/marco-land/bookup" target="_blank">GitHub</a><br>
 <a href="/license" target="_blank">License</a>
 
