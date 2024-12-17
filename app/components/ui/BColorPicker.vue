@@ -21,7 +21,7 @@ const colorWithoutHashtag = computed({
       <template #content>
         <div class="p-2">
           <div class="text-xs">
-            Placeholder Color Picker
+            ⚠ Interactive color picker back soon!
           </div>
           <!-- <UColorPicker v-model="design.background" class="p-2" /> -->
         </div>

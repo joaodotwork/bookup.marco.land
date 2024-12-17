@@ -75,8 +75,8 @@ const scale = computed({
       <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" class="w-full" size="sm" variant="soft" :disabled="!animation" />
     </BSection>
     <USeparator />
-    <BSection label="Export">
+    <!-- <BSection label="Export">
       <UButton size="sm" icon="i-mdi-download" variant="soft" label="Export HTML" color="neutral" />
-    </BSection>
+    </BSection> -->
   </aside>
 </template>
