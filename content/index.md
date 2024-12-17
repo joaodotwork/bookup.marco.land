@@ -1,6 +1,5 @@
 # Info
-v1.0.1<br>
-<a href="https://github.com/marco-land/boockup.marco.land" target="_blank">GitHub</a><br>
+<a href="https://github.com/marco-land/bookup" target="_blank">GitHub</a><br>
 <a href="/license" target="_blank">License</a>
 
 ## Example Book

@@ -1,75 +1,21 @@
-# Nuxt UI v3 Starter
+# Bookup
 
-Look at [Nuxt docs](https://nuxt.com/docs/getting-started/introduction) and [Nuxt UI docs](https://ui3.nuxt.dev) to learn more.
+Bookup is a web-based tool built with Nuxt 3 that allows users to generate a spinning preview of a book. Whether you’re an author, designer, or developer, Bookup helps you showcase your book cover or any other design in a dynamic and interactive way.
 
 ## Setup
 
-Make sure to install the dependencies:
-
 ```bash
-# npm
-npm install
-
-# pnpm
+# Install the dependencies
 pnpm install
 
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
+# Start the development server on `http://localhost:3000`
 pnpm run dev
 
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
+# Build the application for production
 pnpm run build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Acknowledgments
+- [Nuxt 3](https://nuxt.com/)
+- [Nuxt UI](https://ui.nuxt.com/)
+- [DeSandro's Intro to CSS 3D Transforms](https://3dtransforms.desandro.com/)
