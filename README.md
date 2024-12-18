@@ -1,6 +1,6 @@
 # Bookup
 
-Bookup, formerly spelled as *Boockup*, is a web-based tool built with Nuxt 3 that allows users to generate a spinning preview of a book. Whether you’re an author, designer, or something else, *Bookup* helps you showcase your book cover or any other design in a dynamic way.
+Bookup, formerly spelled as *Boockup*, is a web-based tool built with Nuxt 3 that allows users to generate a spinning preview of a book.
 
 ## Setup
 
