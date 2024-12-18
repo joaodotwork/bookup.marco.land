@@ -2,9 +2,6 @@
 title: 'Bookup'
 description: 'Bookup is a social media platform for book lovers. Share your favorite books and discover new ones.'
 ---
-<a href="https://github.com/marco-land/bookup" target="_blank">GitHub</a><br>
-<a href="/license" target="_blank">License</a>
-
 ## Example Book
 <em>Public Space? Lost and Found</em> (MIT Press) designed by <a href="https://node.international" target="_blank">NODE Berlin Oslo</a>
 

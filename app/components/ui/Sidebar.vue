@@ -1,7 +1,12 @@
 <script setup lang="ts">
 const { showSidebar } = storeToRefs(useAppStore())
 const { dimensions, rotation, animation } = storeToRefs(useBookStore())
-const openModal = ref(false)
+
+const showLicense = ref(false)
+const showInfo = ref(false)
+
+const { data: licenseData } = await useAsyncData('license-data', () => queryContent('/license').findOne())
+const { data: infoData } = await useAsyncData('info-data', () => queryContent('/').findOne())
 
 const timings = ref([
   'linear',
@@ -36,16 +41,14 @@ const scale = computed({
 <template>
   <aside class="h-[100svh] border-l border-[var(--ui-border)] overflow-auto bg-white dark:bg-[var(--color-gray-950)]">
     <BSection>
-      <UButton size="sm" :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'" variant="soft" color="neutral" class="w-7" @click="showSidebar = !showSidebar" />
-      <UModal v-model:open="openModal">
-        <UButton size="sm" icon="i-mdi-information" variant="soft" label="Bookup" color="neutral" />
-        <template #content>
-          <div class="p-4 text-xs">
-            <ContentDoc />
-            <UButton size="sm" class="absolute top-3 right-3" color="neutral" label="Close" @click="openModal = false" />
-          </div>
-        </template>
-      </UModal>
+      <UButton
+        size="sm"
+        :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'"
+        variant="soft"
+        color="neutral"
+        class="w-7"
+        @click="showSidebar = !showSidebar"
+      />
     </BSection>
     <USeparator />
     <BSection label="Design">
@@ -81,5 +84,35 @@ const scale = computed({
     <!-- <BSection label="Export">
       <UButton size="sm" icon="i-mdi-download" variant="soft" label="Export HTML" color="neutral" />
     </BSection> -->
+    <BSection>
+      <UCollapsible v-model:open="showInfo" class="col-span-2">
+        <UButton color="neutral" variant="link" class="text-xs font-bold p-0 color-inherit cursor-pointer text-[var(--ui-text)]">
+          Info
+        </UButton>
+        <template #content>
+          <div v-if="infoData" class="text-xs">
+            <ContentRenderer :value="infoData">
+              <ContentRendererMarkdown :value="infoData" />
+            </ContentRenderer>
+          </div>
+        </template>
+      </UCollapsible>
+    </BSection>
+    <USeparator />
+    <BSection>
+      <UCollapsible v-model:open="showLicense" class="col-span-2">
+        <UButton color="neutral" variant="link" class="text-xs font-bold p-0 color-inherit cursor-pointer text-[var(--ui-text)]">
+          License
+        </UButton>
+        <template #content>
+          <div v-if="licenseData" class="text-xs">
+            <ContentRenderer :value="licenseData">
+              <ContentRendererMarkdown :value="licenseData" />
+            </ContentRenderer>
+          </div>
+        </template>
+      </UCollapsible>
+    </BSection>
+    <USeparator />
   </aside>
 </template>
