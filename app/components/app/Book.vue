@@ -57,38 +57,55 @@ const bookBackStyle = computed(() => ({
   background: `url(${design.value.back || '/images/book-back.jpg'})`,
   transform: `translate3d(${width.value * -0.5}px ,${height.value * -0.5}px ,${depth.value / 2}px) translate3d(0,0, -${depth.value}px) rotateY(180deg)`,
 }))
+
+/**
+ * Preload images
+ */
+const loaded = ref(false)
+onMounted(async () => {
+  await preloadImages([
+    '/images/book-cover.jpg',
+    '/images/book-back.jpg',
+    '/images/book-spine.jpg',
+    '/images/book-top.jpg',
+    '/images/book-side.jpg',
+  ])
+  loaded.value = true
+})
 </script>
 
 <template>
-  <div id="book" class="book-wrapper" :style="{ backgroundColor: design.background }">
-    <div :style="wrapperStyle">
-      <div
-        class="book-container" :style="animationStyle"
-      >
+  <div id="book" :style="{ backgroundColor: design.background }">
+    <div :data-loaded="loaded" class="book-wrapper">
+      <div :style="wrapperStyle">
         <div
-          class="book-front"
-          :style="bookCoverStyle"
-        />
-        <div
-          class="book-side-left"
-          :style="bookLeftStyle"
-        />
-        <div
-          class="book-side-right"
-          :style="bookRightStyle"
-        />
-        <div
-          class="book-top"
-          :style="bookTopStyle"
-        />
-        <div
-          class="book-bottom"
-          :style="bookBottomStyle"
-        />
-        <div
-          class="book-back"
-          :style="bookBackStyle"
-        />
+          class="book-container" :style="animationStyle"
+        >
+          <div
+            class="book-front"
+            :style="bookCoverStyle"
+          />
+          <div
+            class="book-side-left"
+            :style="bookLeftStyle"
+          />
+          <div
+            class="book-side-right"
+            :style="bookRightStyle"
+          />
+          <div
+            class="book-top"
+            :style="bookTopStyle"
+          />
+          <div
+            class="book-bottom"
+            :style="bookBottomStyle"
+          />
+          <div
+            class="book-back"
+            :style="bookBackStyle"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -127,6 +144,11 @@ const bookBackStyle = computed(() => ({
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: opacity 0.4s ease-in-out;
+  opacity: 0;
+}
+.book-wrapper[data-loaded=true] {
+  opacity: 1;
 }
 .book-wrapper > div {
   transform-style: preserve-3d;
