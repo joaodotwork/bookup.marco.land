@@ -6,14 +6,18 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@nuxt/content',
+    '@nuxt/scripts',
   ],
+
   css: ['~/assets/css/main.css'],
+
   components: [
     {
       path: '~/components',
       pathPrefix: false,
     },
   ],
+
   future: {
     compatibilityVersion: 4,
   },
@@ -23,6 +27,17 @@ export default defineNuxtConfig({
   content: {
     markdown: {
       anchorLinks: false,
+    },
+  },
+
+  scripts: {
+    registry: {
+      plausibleAnalytics: {
+        domain: process.env.NUXT_PLAUSIBLE_DOMAIN!,
+        scriptInput: {
+          src: process.env.NUXT_PLAUSIBLE_SCRIPT_INPUT!,
+        },
+      },
     },
   },
 })
