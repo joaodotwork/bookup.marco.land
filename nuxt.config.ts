@@ -40,4 +40,13 @@ export default defineNuxtConfig({
       },
     },
   },
+
+  /**
+   * ! TODO: Remove this when its fixed: https://github.com/nuxt/ui/issues/2922
+   */
+  vite: {
+    optimizeDeps: {
+      include: ['color'],
+    },
+  },
 })

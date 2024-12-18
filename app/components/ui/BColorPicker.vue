@@ -20,10 +20,7 @@ const colorWithoutHashtag = computed({
       </UButton>
       <template #content>
         <div class="p-2">
-          <div class="text-xs">
-            ⚠ Interactive color picker back soon!
-          </div>
-          <!-- <UColorPicker v-model="design.background" class="p-2" /> -->
+          <UColorPicker v-model="design.background" class="p-2" />
         </div>
       </template>
     </UPopover>
