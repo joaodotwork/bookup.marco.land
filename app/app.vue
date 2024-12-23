@@ -11,7 +11,7 @@ useHead({
 
 useSeoMeta({
   title: 'Bookup',
-  description: 'Bookup is a social media platform for book lovers. Share your favorite books and discover new ones.',
+  description: 'Boockup is a web-based tool for creating digital book mockups.',
 })
 </script>
 
