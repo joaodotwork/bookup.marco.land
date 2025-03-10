@@ -150,7 +150,7 @@ function initThree() {
   scene = new THREE.Scene()
 
   // Set background color
-  scene.background = new THREE.Color(design.value.background)
+  updateSceneBackground()
 
   // Create lights
   lights = {
@@ -209,6 +209,13 @@ function initThree() {
 
   // Handle window resize
   window.addEventListener('resize', onWindowResize)
+}
+
+// Update the scene background color from design
+function updateSceneBackground() {
+  if (scene) {
+    scene.background = new THREE.Color(design.value.background)
+  }
 }
 
 // Create book geometry
@@ -384,19 +391,19 @@ watch([width, height, depth], () => {
   }
 })
 
-// Watch for design property changes (cover, back, spine, background)
-watch(() => design.value, async (newDesign, oldDesign) => {
+// Watch for design property changes for textures
+watch(() => [design.value.cover, design.value.back, design.value.spine], async () => {
   if (scene) {
-    // Update background color if it changed
-    if (newDesign.background !== oldDesign.background) {
-      scene.background = new THREE.Color(newDesign.background)
-    }
-
     // Force reload of textures when design changes
     await reloadAllTextures()
     createBook() // Recreate book with new textures
   }
 }, { deep: true })
+
+// Watch specifically for background color changes
+watch(() => design.value.background, () => {
+  updateSceneBackground()
+})
 
 // Update lighting when preset changes
 watch(() => lighting.value.preset, (newPreset) => {
@@ -543,7 +550,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="book" ref="rendererContainer" :style="{ backgroundColor: design.background }">
+  <div
+    id="book"
+    ref="rendererContainer"
+    :style="{ backgroundColor: design.background }"
+  >
     <div class="three-container" :data-loaded="loaded">
       <canvas ref="canvasRef" />
     </div>
