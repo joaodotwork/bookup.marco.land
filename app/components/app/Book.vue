@@ -233,7 +233,8 @@ function createBook() {
   const d = depth.value
 
   // Create more advanced materials with better edge handling and color accuracy
-  const materialParams = {
+  // Physical material parameters (for cover, back, spine)
+  const physicalMaterialParams = {
     cover: {
       map: loadedTextures.value.cover,
       roughness: 0.5, // Less roughness for better texture clarity
@@ -258,49 +259,64 @@ function createBook() {
       clearcoatRoughness: 0.7,
       reflectivity: 0.1,
     },
+  }
+
+  // Standard material parameters (for sides, top, bottom)
+  const standardMaterialParams = {
     sides: {
       map: loadedTextures.value.side,
       roughness: 0.9, // Rougher for pages
       metalness: 0.0,
-      reflectivity: 0.05, // Minimal reflectivity for paper
     },
     top: {
       map: loadedTextures.value.top,
       roughness: 0.9,
       metalness: 0.0,
-      reflectivity: 0.05,
     },
   }
 
-  // Common material settings
-  Object.values(materialParams).forEach((params) => {
-    // Add common settings to all materials
+  // Common settings for physical materials
+  Object.values(physicalMaterialParams).forEach((params) => {
+    // Add common settings to physical materials
     Object.assign(params, {
       flatShading: false,
       shadowSide: THREE.FrontSide,
       envMapIntensity: 0, // Disable environment map to preserve texture colors
       dithering: true, // Enable dithering for smoother gradients
-
-      // Improve color accuracy
       colorWrite: true,
       transparent: false,
       fog: false,
-
-      // Crucial for accurate texture colors
       color: new THREE.Color(0xFFFFFF), // Pure white base color to show texture as-is
       emissive: new THREE.Color(0x000000), // No emission
       emissiveIntensity: 0,
     })
   })
 
+  // Common settings for standard materials
+  Object.values(standardMaterialParams).forEach((params) => {
+    // Add common settings to standard materials
+    Object.assign(params, {
+      flatShading: false,
+      shadowSide: THREE.FrontSide,
+      envMapIntensity: 0,
+      dithering: true,
+      colorWrite: true,
+      transparent: false,
+      fog: false,
+      color: new THREE.Color(0xFFFFFF),
+      emissive: new THREE.Color(0x000000),
+      emissiveIntensity: 0,
+    })
+  })
+
   // Create materials from parameters
   const materials = {
-    cover: new THREE.MeshPhysicalMaterial(materialParams.cover),
-    back: new THREE.MeshPhysicalMaterial(materialParams.back),
-    spine: new THREE.MeshPhysicalMaterial(materialParams.spine),
-    right: new THREE.MeshStandardMaterial(materialParams.sides),
-    top: new THREE.MeshStandardMaterial(materialParams.top),
-    bottom: new THREE.MeshStandardMaterial(materialParams.top),
+    cover: new THREE.MeshPhysicalMaterial(physicalMaterialParams.cover),
+    back: new THREE.MeshPhysicalMaterial(physicalMaterialParams.back),
+    spine: new THREE.MeshPhysicalMaterial(physicalMaterialParams.spine),
+    right: new THREE.MeshStandardMaterial(standardMaterialParams.sides),
+    top: new THREE.MeshStandardMaterial(standardMaterialParams.top),
+    bottom: new THREE.MeshStandardMaterial(standardMaterialParams.top),
   }
 
   // Create a single box geometry for the main book structure
