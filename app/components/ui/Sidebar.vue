@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { showSidebar } = storeToRefs(useAppStore())
-const { dimensions, rotation, animation } = storeToRefs(useBookStore())
+const { dimensions, animation } = storeToRefs(useBookStore())
 
 const showLicense = ref(false)
 const showInfo = ref(false)
@@ -63,15 +63,6 @@ const scale = computed({
       <UInput v-model="dimensions.height" type="number" size="sm" icon="i-mdi-arrow-up-down" variant="soft" />
       <UInput v-model="dimensions.depth" type="number" size="sm" icon="i-mdi-arrow-top-left-bottom-right" variant="soft" />
       <UInput v-model="scale" :min="SCALE_MIN" :max="SCALE_MAX" :step="1" type="number" size="sm" icon="i-mdi-percent-outline" variant="soft" />
-    </BSection>
-    <USeparator />
-    <BSection label="Rotation">
-      <USlider v-model="rotation.x" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
-      <UInput v-model="rotation.x" :required="true" :min="-180" :max="180" :step="1" type="number" size="sm" icon="i-mdi-horizontal-rotate-counterclockwise" variant="soft" />
-      <USlider v-model="rotation.y" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
-      <UInput v-model="rotation.y" type="number" size="sm" icon="i-mdi-axis-z-rotate-clockwise" variant="soft" />
-      <USlider v-model="rotation.z" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
-      <UInput v-model="rotation.z" type="number" size="sm" icon="i-mdi-axis-y-rotate-clockwise" variant="soft" />
     </BSection>
     <USeparator />
     <BSection label="Animation">

@@ -14,11 +14,6 @@ export const useBookStore = defineStore('@bookup/book', {
       depth: 29,
       scale: 1,
     },
-    rotation: {
-      x: 0,
-      y: 0,
-      z: 0,
-    },
     animation: {
       enabled: true,
       speed: 10,

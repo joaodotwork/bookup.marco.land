@@ -1,8 +1,8 @@
 <script setup lang="ts">
-const { design, dimensions, rotation, animation } = storeToRefs(useBookStore())
+const { design, dimensions, animation } = storeToRefs(useBookStore())
 
 const wrapperStyle = computed(() => ({
-  transform: `rotateX(${rotation.value.x}deg) rotateY(${rotation.value.y}deg) rotateZ(${rotation.value.z}deg)`,
+  transform: 'rotateX(0deg) rotateY(0deg) rotateZ(0deg)',
 }))
 
 const animationStyle = computed(() => (
