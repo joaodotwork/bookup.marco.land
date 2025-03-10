@@ -360,7 +360,42 @@ function animate(time = 0) {
   // Apply animation if enabled (with time-based animation for consistent speed)
   if (animation.value.enabled && book) {
     // Convert to radians per second, normalize by expected 60fps
-    const speed = (0.001 * animation.value.speed) * (delta / 16.6667)
+    const baseSpeed = (0.001 * animation.value.speed) * (delta / 16.6667)
+
+    // Apply easing based on timing property
+    let speed = baseSpeed
+    const timing = animation.value.timing
+
+    // Apply fluid easing based on timing property
+    if (timing !== 'linear') {
+      // Use a continuous sine wave modulation for smooth, non-stepped easing
+      // This creates a continuous, fluid motion rather than discrete cycles
+      const t = time * 0.001 // time in seconds
+
+      // Common easing factor calculations
+      const phase = (Math.sin(t) + 1) / 2 // Continuous 0-1-0 oscillation
+
+      if (timing === 'ease') {
+        // Smooth acceleration and deceleration with slight bias toward faster speeds
+        speed = baseSpeed * (0.7 + 0.5 * phase)
+      }
+      else if (timing === 'ease-in') {
+        // Gradually accelerates, never fully slows down
+        speed = baseSpeed * (0.4 + 0.8 * phase * phase)
+      }
+      else if (timing === 'ease-out') {
+        // Starts faster, gradually decelerates
+        const easeOutFactor = 1 - (1 - phase) ** 2
+        speed = baseSpeed * (0.4 + 0.8 * easeOutFactor)
+      }
+      else if (timing === 'ease-in-out') {
+        // Smooth acceleration and deceleration, symmetrical
+        speed = baseSpeed * (0.3 + 0.9 * (phase < 0.5
+          ? 2 * phase ** 2
+          : 1 - ((-2 * phase + 2) ** 2) / 2))
+      }
+    }
+    // linear is the default (no modification to speed)
 
     switch (animation.value.axis) {
       case 'X':
