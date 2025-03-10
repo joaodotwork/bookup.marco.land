@@ -453,153 +453,75 @@ function updateLighting(preset: string) {
     return
 
   switch (preset) {
-    case 'studio':
-      // Studio lighting: neutral lighting optimized for color accuracy
-      lights.ambient.intensity = 1.0
-      lights.ambient.color.set(0xFFFFFF)
-
-      lights.main.intensity = 0.3
-      lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(0, 1, 1)
-
-      lights.fill.intensity = 0.2
-      lights.fill.color.set(0xFFFFFF)
-      lights.fill.position.set(-1, 0, 0.5)
-
-      lights.rim.intensity = 0.1
-      lights.rim.color.set(0xFFFFFF)
-      lights.rim.position.set(0, 0, -1)
-      break
-
-    case 'soft':
-      // Soft lighting: gentle, evenly diffused lighting for accurate colors
-      lights.ambient.intensity = 0.9
-      lights.ambient.color.set(0xFFFFFF)
-
-      lights.main.intensity = 0.3
-      lights.main.color.set(0xFFFFF8) // Slightly warm main light
-      lights.main.position.set(0, 1, 1.5)
-
-      lights.fill.intensity = 0.3
-      lights.fill.color.set(0xFAFAFF) // Slightly cool fill
-      lights.fill.position.set(-1, 0.2, 0.5)
-
-      lights.rim.intensity = 0.1
-      lights.rim.color.set(0xFFFFFF)
-      lights.rim.position.set(0, 0.5, -1)
-      break
-
-    case 'dramatic':
-      // Dramatic lighting: high contrast but with neutral key light
-      lights.ambient.intensity = 0.2
-      lights.ambient.color.set(0x444444)
-
-      lights.main.intensity = 1.0
-      lights.main.color.set(0xFFFFFF) // Neutral main light for accurate color
-      lights.main.position.set(1.5, 1, 1.5)
-
-      lights.fill.intensity = 0.1
-      lights.fill.color.set(0x6D9BFF) // Slight blue tint in shadow
-      lights.fill.position.set(-1.5, 0, 0.5)
-
-      lights.rim.intensity = 0.5
-      lights.rim.color.set(0xFFE3D0) // Slight orange rim
-      lights.rim.position.set(0, 0.5, -2)
-      break
-
-    case 'warm':
-      // Warm lighting: natural color rendering with warm bias
-      lights.ambient.intensity = 0.4
-      lights.ambient.color.set(0xFFF6E5)
-
-      lights.main.intensity = 0.8
-      lights.main.color.set(0xFFEACC) // Warm main light
-      lights.main.position.set(1, 0.5, 1.5)
-
-      lights.fill.intensity = 0.3
-      lights.fill.color.set(0xFFFFFF) // Neutral fill for better color balance
-      lights.fill.position.set(-1, 0.2, 0.5)
-
-      lights.rim.intensity = 0.2
-      lights.rim.color.set(0xFFDDBB)
-      lights.rim.position.set(0, 0.5, -1.5)
-      break
-
-    case 'cool':
-      // Cool lighting: natural color rendering with cool bias
-      lights.ambient.intensity = 0.4
-      lights.ambient.color.set(0xE5F0FF)
-
-      lights.main.intensity = 0.8
-      lights.main.color.set(0xD6EBFF) // Cool main light
-      lights.main.position.set(1, 0.5, 1.5)
-
-      lights.fill.intensity = 0.3
-      lights.fill.color.set(0xFFFFFF) // Neutral fill for better color balance
-      lights.fill.position.set(-1, 0.2, 0.5)
-
-      lights.rim.intensity = 0.2
-      lights.rim.color.set(0xC4E0FF)
-      lights.rim.position.set(0, 0.5, -1.5)
-      break
-
-    case 'sunset':
-      // Sunset lighting: warm golden/orange lighting with dramatic shadows
-      lights.ambient.intensity = 0.3
-      lights.ambient.color.set(0xFFA066)
-
-      lights.main.intensity = 1.0
-      lights.main.color.set(0xFF7F00) // Strong orange main light
-      lights.main.position.set(1.5, 0.2, 1)
-
-      lights.fill.intensity = 0.4
-      lights.fill.color.set(0x6666FF) // Blue fill light for complementary color
-      lights.fill.position.set(-1, 0.5, 0.5)
-
-      lights.rim.intensity = 0.5
-      lights.rim.color.set(0xFF4500) // Deep orange rim light
-      lights.rim.position.set(0, 0.2, -1.5)
-      break
-
-    case 'vintage':
-      // Vintage lighting: slightly desaturated warm lighting with vignette effect
+    case 'neutral':
+      // Neutral studio lighting: 3-point lighting setup with perfect color accuracy
+      // Based on commercial product photography standards
       lights.ambient.intensity = 0.5
-      lights.ambient.color.set(0xE6DFD1) // Slightly yellow-beige ambient
+      lights.ambient.color.set(0xFFFFFF)
 
-      lights.main.intensity = 0.7
-      lights.main.color.set(0xF5D0A9) // Sepia-toned main light
-      lights.main.position.set(1, 0.8, 1)
+      // Key light - 45° from front, slightly elevated
+      lights.main.intensity = 0.8
+      lights.main.color.set(0xFFFFFF)
+      lights.main.position.set(1, 0.7, 1)
 
-      lights.fill.intensity = 0.3
-      lights.fill.color.set(0xD8C7A9) // Desaturated warm fill
-      lights.fill.position.set(-0.8, 0.2, 0.5)
+      // Fill light - opposite key light, softer
+      lights.fill.intensity = 0.4
+      lights.fill.color.set(0xFFFFFF)
+      lights.fill.position.set(-1, 0.3, 0.7)
 
-      lights.rim.intensity = 0.2
-      lights.rim.color.set(0xF0E6D2) // Cream-colored rim light
+      // Rim/Back light - behind object for edge definition
+      lights.rim.intensity = 0.3
+      lights.rim.color.set(0xFFFFFF)
       lights.rim.position.set(0, 0.5, -1)
       break
 
-    case 'night':
-      // Night lighting: low-key blue lighting with high contrast
-      lights.ambient.intensity = 0.05
-      lights.ambient.color.set(0x0A1A2A) // Very dark blue ambient
+    case 'product':
+      // Classic product photography setup with softboxes
+      // Simulates professional catalog/e-commerce lighting
+      lights.ambient.intensity = 0.3
+      lights.ambient.color.set(0xFCFCFC)
 
-      lights.main.intensity = 0.5
-      lights.main.color.set(0x3A70B0) // Medium blue main light
-      lights.main.position.set(1, 1.5, 1)
+      // Main softbox - positioned for even coverage
+      lights.main.intensity = 0.7
+      lights.main.color.set(0xFFFFF8) // Very slightly warm
+      lights.main.position.set(0.5, 1, 1.2)
 
-      lights.fill.intensity = 0.2
-      lights.fill.color.set(0x192740) // Dark blue fill light
+      // Large fill panel - reduces harsh shadows
+      lights.fill.intensity = 0.5
+      lights.fill.color.set(0xFAFAFF) // Very slightly cool
       lights.fill.position.set(-1, 0.2, 0.5)
 
-      lights.rim.intensity = 0.7
-      lights.rim.color.set(0x66CCFF) // Bright blue rim light for edge definition
-      lights.rim.position.set(0, 0.5, -1)
+      // Top rim light - creates professional edge definition
+      lights.rim.intensity = 0.25
+      lights.rim.color.set(0xFFFFFA)
+      lights.rim.position.set(0, 1.2, -0.5)
+      break
+
+    case 'showcase':
+      // High-end display case lighting - dramatic but professional
+      // Creates a premium "featured product" effect
+      lights.ambient.intensity = 0.2
+      lights.ambient.color.set(0x303030)
+
+      // Spotlight effect - focused beam
+      lights.main.intensity = 1.0
+      lights.main.color.set(0xFFFFF0) // Subtle warm spotlight
+      lights.main.position.set(0, 1.5, 1)
+
+      // Accent light - adds dimension
+      lights.fill.intensity = 0.25
+      lights.fill.color.set(0xF8F8FF) // Subtle cool fill
+      lights.fill.position.set(-1.5, 0.3, 0.5)
+
+      // Edge highlight - creates professional separation
+      lights.rim.intensity = 0.4
+      lights.rim.color.set(0xFFFAF0)
+      lights.rim.position.set(0.5, 0.3, -1.5)
       break
 
     default:
-      // Default to studio lighting
-      updateLighting('studio')
+      // Default to neutral studio lighting
+      updateLighting('neutral')
   }
 }
 

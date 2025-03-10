@@ -22,14 +22,9 @@ const axes = ref([
 ])
 
 const lightingPresets = ref([
-  { label: 'Studio', value: 'studio', icon: 'i-mdi-lightbulb-on' },
-  { label: 'Soft', value: 'soft', icon: 'i-mdi-lightbulb-outline' },
-  { label: 'Dramatic', value: 'dramatic', icon: 'i-mdi-lightning-bolt' },
-  { label: 'Warm', value: 'warm', icon: 'i-mdi-white-balance-sunny' },
-  { label: 'Cool', value: 'cool', icon: 'i-mdi-snowflake' },
-  { label: 'Sunset', value: 'sunset', icon: 'i-mdi-weather-sunset' },
-  { label: 'Vintage', value: 'vintage', icon: 'i-mdi-camera-vintage' },
-  { label: 'Night', value: 'night', icon: 'i-mdi-moon-waning-crescent' },
+  { label: 'Neutral', value: 'neutral', icon: 'i-mdi-camera' },
+  { label: 'Product', value: 'product', icon: 'i-mdi-package-variant' },
+  { label: 'Showcase', value: 'showcase', icon: 'i-mdi-spotlight' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1
@@ -84,26 +79,12 @@ const scale = computed({
     </BSection>
     <USeparator />
     <BSection label="Lighting">
-      <div class="grid grid-cols-2 gap-2 col-span-2">
+      <div class="grid grid-cols-3 gap-2 col-span-2">
         <UButton
-          v-for="preset in lightingPresets.slice(0, 4)"
+          v-for="preset in lightingPresets"
           :key="preset.value"
           :icon="preset.icon"
-          size="xs"
-          :color="lighting.preset === preset.value ? 'primary' : 'gray'"
-          variant="soft"
-          class="w-full"
-          @click="lighting.preset = preset.value"
-        >
-          {{ preset.label }}
-        </UButton>
-      </div>
-      <div class="grid grid-cols-2 gap-2 col-span-2 mt-2">
-        <UButton
-          v-for="preset in lightingPresets.slice(4)"
-          :key="preset.value"
-          :icon="preset.icon"
-          size="xs"
+          size="sm"
           :color="lighting.preset === preset.value ? 'primary' : 'gray'"
           variant="soft"
           class="w-full"
