@@ -69,9 +69,16 @@ function initThree() {
     canvas: canvasRef.value,
     antialias: true,
     alpha: true,
+    precision: 'highp',
+    powerPreference: 'high-performance',
+    stencil: false,
   })
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(rendererContainer.value.clientWidth, rendererContainer.value.clientHeight)
+
+  // Enable shadow mapping for better edges
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   // Create scene
   scene = new THREE.Scene()
@@ -87,8 +94,26 @@ function initThree() {
     rim: new THREE.DirectionalLight(0xFFFFFF, 0.5),
   }
 
-  // Add all lights to scene
-  Object.values(lights).forEach(light => scene.add(light))
+  // Configure shadows for directional lights
+  Object.values(lights).forEach((light) => {
+    scene.add(light)
+
+    if (light instanceof THREE.DirectionalLight) {
+      light.castShadow = true
+      light.shadow.mapSize.width = 1024
+      light.shadow.mapSize.height = 1024
+      light.shadow.camera.near = 0.5
+      light.shadow.camera.far = 2000
+      light.shadow.bias = -0.001 // Reduce shadow acne
+
+      // Adjust shadow camera size to fit the book
+      const maxDimension = Math.max(width.value, height.value, depth.value) * 2
+      light.shadow.camera.left = -maxDimension
+      light.shadow.camera.right = maxDimension
+      light.shadow.camera.top = maxDimension
+      light.shadow.camera.bottom = -maxDimension
+    }
+  })
 
   // Apply initial lighting preset
   updateLighting(lighting.value.preset)
@@ -134,80 +159,85 @@ function createBook() {
   const h = height.value
   const d = depth.value
 
-  // Create materials with textures
-  const materials = {
-    cover: new THREE.MeshPhysicalMaterial({
+  // Create more advanced materials with better edge handling
+  const materialParams = {
+    cover: {
       map: loadedTextures.value.cover,
       roughness: 0.7,
       metalness: 0.1,
-      clearcoat: 0.3, // Slight glossy finish for book cover
+      clearcoat: 0.3,
       clearcoatRoughness: 0.2,
-    }),
-    back: new THREE.MeshPhysicalMaterial({
+    },
+    back: {
       map: loadedTextures.value.back,
       roughness: 0.7,
       metalness: 0.1,
       clearcoat: 0.3,
       clearcoatRoughness: 0.2,
-    }),
-    spine: new THREE.MeshPhysicalMaterial({
+    },
+    spine: {
       map: loadedTextures.value.spine,
       roughness: 0.65,
       metalness: 0.1,
-      clearcoat: 0.4, // More glossy on spine
+      clearcoat: 0.4,
       clearcoatRoughness: 0.1,
-    }),
-    side: new THREE.MeshStandardMaterial({
+    },
+    sides: {
       map: loadedTextures.value.side,
-      roughness: 0.9, // Pages are rougher
+      roughness: 0.9,
       metalness: 0.0,
-    }),
-    top: new THREE.MeshStandardMaterial({
+    },
+    top: {
       map: loadedTextures.value.top,
       roughness: 0.9,
       metalness: 0.0,
-    }),
+    },
   }
 
-  // Front cover (front face)
-  const coverGeometry = new THREE.BoxGeometry(w, h, 1)
-  const coverMesh = new THREE.Mesh(coverGeometry, materials.cover)
-  coverMesh.position.set(0, 0, d / 2)
-  book.add(coverMesh)
+  // Common material settings
+  Object.values(materialParams).forEach((params) => {
+    // Add common settings to all materials
+    Object.assign(params, {
+      flatShading: false,
+      shadowSide: THREE.FrontSide,
+      envMapIntensity: 1.0,
+      dithering: true, // Enable dithering for smoother gradients
+    })
+  })
 
-  // Back cover (back face)
-  const backGeometry = new THREE.BoxGeometry(w, h, 1)
-  const backMesh = new THREE.Mesh(backGeometry, materials.back)
-  backMesh.position.set(0, 0, -d / 2)
-  book.add(backMesh)
+  // Create materials from parameters
+  const materials = {
+    cover: new THREE.MeshPhysicalMaterial(materialParams.cover),
+    back: new THREE.MeshPhysicalMaterial(materialParams.back),
+    spine: new THREE.MeshPhysicalMaterial(materialParams.spine),
+    right: new THREE.MeshStandardMaterial(materialParams.sides),
+    top: new THREE.MeshStandardMaterial(materialParams.top),
+    bottom: new THREE.MeshStandardMaterial(materialParams.top),
+  }
 
-  // Spine (left face)
-  const spineGeometry = new THREE.BoxGeometry(d, h, 1)
-  const spineMesh = new THREE.Mesh(spineGeometry, materials.spine)
-  spineMesh.position.set(-w / 2, 0, 0)
-  spineMesh.rotation.y = Math.PI / 2
-  book.add(spineMesh)
+  // Create a single box geometry for the main book structure
+  const mainGeometry = new THREE.BoxGeometry(w, h, d)
 
-  // Right side
-  const rightGeometry = new THREE.BoxGeometry(d, h, 1)
-  const rightMesh = new THREE.Mesh(rightGeometry, materials.side)
-  rightMesh.position.set(w / 2, 0, 0)
-  rightMesh.rotation.y = Math.PI / 2
-  book.add(rightMesh)
+  // Create materials array for each face of the box
+  // Order: right (+x), left (-x), top (+y), bottom (-y), front (+z), back (-z)
+  const mainMaterials = [
+    materials.right, // right side (+x)
+    materials.spine, // spine/left side (-x)
+    materials.top, // top (+y)
+    materials.bottom, // bottom (-y)
+    materials.cover, // front/cover (+z)
+    materials.back, // back (-z)
+  ]
 
-  // Top
-  const topGeometry = new THREE.BoxGeometry(w, d, 1)
-  const topMesh = new THREE.Mesh(topGeometry, materials.top)
-  topMesh.position.set(0, h / 2, 0)
-  topMesh.rotation.x = Math.PI / 2
-  book.add(topMesh)
+  // Create main book mesh with all faces
+  const mainBook = new THREE.Mesh(mainGeometry, mainMaterials)
 
-  // Bottom
-  const bottomGeometry = new THREE.BoxGeometry(w, d, 1)
-  const bottomMesh = new THREE.Mesh(bottomGeometry, materials.top)
-  bottomMesh.position.set(0, -h / 2, 0)
-  bottomMesh.rotation.x = Math.PI / 2
-  book.add(bottomMesh)
+  // Enable shadows
+  mainBook.castShadow = true
+  mainBook.receiveShadow = true
+
+  // Add to book group
+  book.add(mainBook)
 
   // Center the book
   book.position.set(0, 0, 0)
@@ -230,13 +260,19 @@ function onWindowResize() {
   renderer.setSize(width, height)
 }
 
-// Animation loop
-function animate() {
+// Animation loop with smoother motion
+let lastTime = 0
+function animate(time = 0) {
   animationFrameId = requestAnimationFrame(animate)
 
-  // Apply animation if enabled
+  // Calculate delta time for smoother animation regardless of frame rate
+  const delta = time - lastTime
+  lastTime = time
+
+  // Apply animation if enabled (with time-based animation for consistent speed)
   if (animation.value.enabled && book) {
-    const speed = 0.001 * animation.value.speed
+    // Convert to radians per second, normalize by expected 60fps
+    const speed = (0.001 * animation.value.speed) * (delta / 16.6667)
 
     switch (animation.value.axis) {
       case 'X':
@@ -253,7 +289,10 @@ function animate() {
     }
   }
 
+  // Update controls with damping for smoother motion
   controls.update()
+
+  // Render the scene
   renderer.render(scene, camera)
 }
 
