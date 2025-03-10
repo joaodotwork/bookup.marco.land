@@ -159,38 +159,43 @@ function createBook() {
   const h = height.value
   const d = depth.value
 
-  // Create more advanced materials with better edge handling
+  // Create more advanced materials with better edge handling and color accuracy
   const materialParams = {
     cover: {
       map: loadedTextures.value.cover,
-      roughness: 0.7,
-      metalness: 0.1,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.2,
+      roughness: 0.5, // Less roughness for better texture clarity
+      metalness: 0.0, // No metalness to preserve colors
+      clearcoat: 0.2, // Slight clearcoat for gloss
+      clearcoatRoughness: 0.8, // More diffuse clearcoat
+      reflectivity: 0.1, // Minimal reflectivity to keep colors true
     },
     back: {
       map: loadedTextures.value.back,
-      roughness: 0.7,
-      metalness: 0.1,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.2,
+      roughness: 0.5,
+      metalness: 0.0,
+      clearcoat: 0.2,
+      clearcoatRoughness: 0.8,
+      reflectivity: 0.1,
     },
     spine: {
       map: loadedTextures.value.spine,
-      roughness: 0.65,
-      metalness: 0.1,
-      clearcoat: 0.4,
-      clearcoatRoughness: 0.1,
+      roughness: 0.5,
+      metalness: 0.0,
+      clearcoat: 0.3, // Slightly more clearcoat for spine
+      clearcoatRoughness: 0.7,
+      reflectivity: 0.1,
     },
     sides: {
       map: loadedTextures.value.side,
-      roughness: 0.9,
+      roughness: 0.9, // Rougher for pages
       metalness: 0.0,
+      reflectivity: 0.05, // Minimal reflectivity for paper
     },
     top: {
       map: loadedTextures.value.top,
       roughness: 0.9,
       metalness: 0.0,
+      reflectivity: 0.05,
     },
   }
 
@@ -200,8 +205,13 @@ function createBook() {
     Object.assign(params, {
       flatShading: false,
       shadowSide: THREE.FrontSide,
-      envMapIntensity: 1.0,
+      envMapIntensity: 0.5, // Reduced to minimize light influence on texture colors
       dithering: true, // Enable dithering for smoother gradients
+
+      // Improve color accuracy
+      colorWrite: true,
+      transparent: false,
+      fog: false,
     })
   })
 
@@ -372,93 +382,93 @@ function updateLighting(preset: string) {
 
   switch (preset) {
     case 'studio':
-      // Studio lighting: balanced, professional look
-      lights.ambient.intensity = 0.6
+      // Studio lighting: neutral, balanced lighting for true color representation
+      lights.ambient.intensity = 0.7
       lights.ambient.color.set(0xFFFFFF)
 
-      lights.main.intensity = 0.8
+      lights.main.intensity = 0.6
       lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(1, 0.5, 2)
+      lights.main.position.set(0, 1, 2)
 
-      lights.fill.intensity = 0.4
+      lights.fill.intensity = 0.3
       lights.fill.color.set(0xFFFFFF)
-      lights.fill.position.set(-2, 0.2, 1)
+      lights.fill.position.set(-1, 0, 1)
 
-      lights.rim.intensity = 0.5
+      lights.rim.intensity = 0.2
       lights.rim.color.set(0xFFFFFF)
-      lights.rim.position.set(0, 1, -2)
+      lights.rim.position.set(0, 0, -1)
       break
 
     case 'soft':
-      // Soft lighting: gentle, diffused lighting
-      lights.ambient.intensity = 0.8
+      // Soft lighting: gentle, evenly diffused lighting for accurate colors
+      lights.ambient.intensity = 0.9
       lights.ambient.color.set(0xFFFFFF)
 
-      lights.main.intensity = 0.5
-      lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(0.5, 0.8, 1.5)
+      lights.main.intensity = 0.3
+      lights.main.color.set(0xFFFFF8) // Slightly warm main light
+      lights.main.position.set(0, 1, 1.5)
 
-      lights.fill.intensity = 0.5
-      lights.fill.color.set(0xFFFFFF)
-      lights.fill.position.set(-1, 0.5, 0.5)
+      lights.fill.intensity = 0.3
+      lights.fill.color.set(0xFAFAFF) // Slightly cool fill
+      lights.fill.position.set(-1, 0.2, 0.5)
 
-      lights.rim.intensity = 0.2
+      lights.rim.intensity = 0.1
       lights.rim.color.set(0xFFFFFF)
       lights.rim.position.set(0, 0.5, -1)
       break
 
     case 'dramatic':
-      // Dramatic lighting: high contrast
-      lights.ambient.intensity = 0.3
-      lights.ambient.color.set(0x333333)
+      // Dramatic lighting: high contrast but with neutral key light
+      lights.ambient.intensity = 0.2
+      lights.ambient.color.set(0x444444)
 
-      lights.main.intensity = 1.2
-      lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(2, 1, 1)
+      lights.main.intensity = 1.0
+      lights.main.color.set(0xFFFFFF) // Neutral main light for accurate color
+      lights.main.position.set(1.5, 1, 1.5)
 
       lights.fill.intensity = 0.1
-      lights.fill.color.set(0x0077FF)
-      lights.fill.position.set(-2, 0, 1)
+      lights.fill.color.set(0x6D9BFF) // Slight blue tint in shadow
+      lights.fill.position.set(-1.5, 0, 0.5)
 
-      lights.rim.intensity = 0.8
-      lights.rim.color.set(0xFF3300)
-      lights.rim.position.set(0, 1, -3)
+      lights.rim.intensity = 0.5
+      lights.rim.color.set(0xFFE3D0) // Slight orange rim
+      lights.rim.position.set(0, 0.5, -2)
       break
 
     case 'warm':
-      // Warm lighting: golden hour effect
-      lights.ambient.intensity = 0.5
-      lights.ambient.color.set(0xFFEECC)
+      // Warm lighting: natural color rendering with warm bias
+      lights.ambient.intensity = 0.4
+      lights.ambient.color.set(0xFFF6E5)
 
-      lights.main.intensity = 0.9
-      lights.main.color.set(0xFFCC88)
-      lights.main.position.set(1, 0.2, 2)
+      lights.main.intensity = 0.8
+      lights.main.color.set(0xFFEACC) // Warm main light
+      lights.main.position.set(1, 0.5, 1.5)
 
       lights.fill.intensity = 0.3
-      lights.fill.color.set(0xFFEEDD)
-      lights.fill.position.set(-1.5, 0.2, 0.5)
+      lights.fill.color.set(0xFFFFFF) // Neutral fill for better color balance
+      lights.fill.position.set(-1, 0.2, 0.5)
 
-      lights.rim.intensity = 0.4
-      lights.rim.color.set(0xFF9900)
-      lights.rim.position.set(-0.5, 1, -2)
+      lights.rim.intensity = 0.2
+      lights.rim.color.set(0xFFDDBB)
+      lights.rim.position.set(0, 0.5, -1.5)
       break
 
     case 'cool':
-      // Cool lighting: cold, blue tinted light
-      lights.ambient.intensity = 0.5
-      lights.ambient.color.set(0xCCDDFF)
+      // Cool lighting: natural color rendering with cool bias
+      lights.ambient.intensity = 0.4
+      lights.ambient.color.set(0xE5F0FF)
 
       lights.main.intensity = 0.8
-      lights.main.color.set(0xAABBFF)
-      lights.main.position.set(1, 0.5, 2)
+      lights.main.color.set(0xD6EBFF) // Cool main light
+      lights.main.position.set(1, 0.5, 1.5)
 
-      lights.fill.intensity = 0.4
-      lights.fill.color.set(0x8899FF)
-      lights.fill.position.set(-2, 0.2, 1)
+      lights.fill.intensity = 0.3
+      lights.fill.color.set(0xFFFFFF) // Neutral fill for better color balance
+      lights.fill.position.set(-1, 0.2, 0.5)
 
-      lights.rim.intensity = 0.6
-      lights.rim.color.set(0x0044FF)
-      lights.rim.position.set(0, 1, -2)
+      lights.rim.intensity = 0.2
+      lights.rim.color.set(0xC4E0FF)
+      lights.rim.position.set(0, 0.5, -1.5)
       break
 
     default:
