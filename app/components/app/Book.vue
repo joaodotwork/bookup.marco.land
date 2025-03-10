@@ -40,8 +40,12 @@ const textureUrls = [
 async function loadTextures() {
   const promises = textureUrls.map(({ key, url }) => {
     return new Promise<void>((resolve) => {
+      // Get the texture source - either from design or default
+      const designKey = key as keyof typeof design.value
+      const textureSource = design.value[designKey] || url
+
       textureLoader.load(
-        design.value[key as keyof typeof design.value] || url,
+        textureSource,
         (texture) => {
           // Apply texture settings for better color reproduction
           texture.encoding = THREE.sRGBEncoding // Use sRGB encoding for correct colors
@@ -57,8 +61,8 @@ async function loadTextures() {
           resolve()
         },
         undefined,
-        () => {
-          console.warn(`Failed to load texture: ${url}`)
+        (error) => {
+          console.error(`Failed to load texture for ${key}:`, error)
           resolve()
         },
       )
@@ -67,6 +71,52 @@ async function loadTextures() {
 
   await Promise.all(promises)
   loaded.value = true
+}
+
+// Reload all textures when uploaded images change
+async function reloadAllTextures() {
+  // Force dispose existing textures to prevent memory leaks
+  Object.values(loadedTextures.value).forEach((texture) => {
+    if (texture)
+      texture.dispose()
+  })
+
+  // Clear loaded textures
+  loadedTextures.value = {}
+
+  // Reload all textures from current design state
+  const promises = textureUrls.map(({ key, url }) => {
+    return new Promise<void>((resolve) => {
+      // Get the texture source - either from design or default
+      const designKey = key as keyof typeof design.value
+      const textureSource = design.value[designKey] || url
+
+      textureLoader.load(
+        textureSource,
+        (texture) => {
+          // Apply texture settings for better color reproduction
+          texture.encoding = THREE.sRGBEncoding
+          texture.anisotropy = 16
+          texture.generateMipmaps = true
+          texture.minFilter = THREE.LinearMipmapLinearFilter
+          texture.magFilter = THREE.LinearFilter
+          texture.wrapS = THREE.ClampToEdgeWrapping
+          texture.wrapT = THREE.ClampToEdgeWrapping
+
+          // Store the texture
+          loadedTextures.value[key] = texture
+          resolve()
+        },
+        undefined,
+        (error) => {
+          console.error(`Failed to reload texture for ${key}:`, error)
+          resolve()
+        },
+      )
+    })
+  })
+
+  return Promise.all(promises)
 }
 
 // Initialize Three.js scene
@@ -342,18 +392,9 @@ watch(() => design.value, async (newDesign, oldDesign) => {
       scene.background = new THREE.Color(newDesign.background)
     }
 
-    // Check if any textures have changed
-    const textureChanged = textureUrls.some(({ key }) =>
-      newDesign[key as keyof typeof newDesign] !== oldDesign[key as keyof typeof oldDesign],
-    )
-
-    // If textures changed, reload them and update the book
-    if (textureChanged) {
-      await reloadChangedTextures(newDesign, oldDesign)
-      if (book) {
-        createBook() // Recreate book with new textures
-      }
-    }
+    // Force reload of textures when design changes
+    await reloadAllTextures()
+    createBook() // Recreate book with new textures
   }
 }, { deep: true })
 
@@ -363,47 +404,6 @@ watch(() => lighting.value.preset, (newPreset) => {
     updateLighting(newPreset)
   }
 })
-
-// Function to reload only textures that have changed
-async function reloadChangedTextures(newDesign: any, oldDesign: any) {
-  const promises = textureUrls.map(({ key, url }) => {
-    const designKey = key as keyof typeof newDesign
-    // Only reload if texture has changed
-    if (newDesign[designKey] !== oldDesign[designKey]) {
-      return new Promise<void>((resolve) => {
-        // If existing texture exists, dispose it to prevent memory leaks
-        if (loadedTextures.value[key]) {
-          loadedTextures.value[key].dispose()
-        }
-
-        textureLoader.load(
-          newDesign[designKey] || url,
-          (texture) => {
-            // Apply texture settings for better color reproduction
-            texture.encoding = THREE.sRGBEncoding
-            texture.anisotropy = 16
-            texture.generateMipmaps = true
-            texture.minFilter = THREE.LinearMipmapLinearFilter
-            texture.magFilter = THREE.LinearFilter
-            texture.wrapS = THREE.ClampToEdgeWrapping
-            texture.wrapT = THREE.ClampToEdgeWrapping
-
-            loadedTextures.value[key] = texture
-            resolve()
-          },
-          undefined,
-          () => {
-            console.warn(`Failed to load texture: ${newDesign[designKey] || url}`)
-            resolve()
-          },
-        )
-      })
-    }
-    return Promise.resolve()
-  })
-
-  await Promise.all(promises)
-}
 
 // Function to update lighting based on preset
 function updateLighting(preset: string) {
