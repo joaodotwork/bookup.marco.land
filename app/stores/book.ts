@@ -20,6 +20,9 @@ export const useBookStore = defineStore('@bookup/book', {
       timing: 'linear',
       axis: 'Y',
     },
+    lighting: {
+      preset: 'studio',
+    },
   }),
   persist: true,
 })

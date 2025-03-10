@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { showSidebar } = storeToRefs(useAppStore())
-const { dimensions, animation } = storeToRefs(useBookStore())
+const { dimensions, animation, lighting } = storeToRefs(useBookStore())
 
 const showLicense = ref(false)
 const showInfo = ref(false)
@@ -19,6 +19,14 @@ const axes = ref([
   'X',
   'Y',
   'Z',
+])
+
+const lightingPresets = ref([
+  { label: 'Studio', value: 'studio', icon: 'i-mdi-lightbulb-on' },
+  { label: 'Soft', value: 'soft', icon: 'i-mdi-lightbulb-outline' },
+  { label: 'Dramatic', value: 'dramatic', icon: 'i-mdi-lightning-bolt' },
+  { label: 'Warm', value: 'warm', icon: 'i-mdi-white-balance-sunny' },
+  { label: 'Cool', value: 'cool', icon: 'i-mdi-snowflake' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1
@@ -70,6 +78,22 @@ const scale = computed({
       <UInput v-model="animation.speed" type="number" size="sm" icon="i-mdi-camera-timer" variant="soft" :disabled="!animation" />
       <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" class="w-full" size="sm" variant="soft" :disabled="!animation" />
       <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" class="w-full" size="sm" variant="soft" :disabled="!animation" />
+    </BSection>
+    <USeparator />
+    <BSection label="Lighting">
+      <UButtonGroup orientation="horizontal" class="w-full col-span-2">
+        <UButton
+          v-for="preset in lightingPresets"
+          :key="preset.value"
+          :icon="preset.icon"
+          size="xs"
+          :color="lighting.preset === preset.value ? 'primary' : 'gray'"
+          variant="soft"
+          class="flex-1"
+          :title="preset.label"
+          @click="lighting.preset = preset.value"
+        />
+      </UButtonGroup>
     </BSection>
     <USeparator />
     <!-- <BSection label="Export">

@@ -2,7 +2,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-const { design, dimensions, animation } = storeToRefs(useBookStore())
+const { design, dimensions, animation, lighting } = storeToRefs(useBookStore())
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const rendererContainer = ref<HTMLDivElement | null>(null)
@@ -12,6 +12,12 @@ let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
 let book: THREE.Group
 let animationFrameId: number
+let lights: {
+  ambient: THREE.AmbientLight
+  main: THREE.DirectionalLight
+  fill: THREE.DirectionalLight
+  rim: THREE.DirectionalLight
+}
 const textureLoader = new THREE.TextureLoader()
 const loadedTextures = ref<Record<string, THREE.Texture>>({})
 
@@ -73,23 +79,36 @@ function initThree() {
   // Set background color
   scene.background = new THREE.Color(design.value.background)
 
-  // Add lights
-  const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5)
-  scene.add(ambientLight)
+  // Create lights
+  lights = {
+    ambient: new THREE.AmbientLight(0xFFFFFF, 0.6),
+    main: new THREE.DirectionalLight(0xFFFFFF, 0.8),
+    fill: new THREE.DirectionalLight(0xFFFFFF, 0.4),
+    rim: new THREE.DirectionalLight(0xFFFFFF, 0.5),
+  }
 
-  const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.8)
-  directionalLight.position.set(1, 1, 1)
-  scene.add(directionalLight)
+  // Add all lights to scene
+  Object.values(lights).forEach(light => scene.add(light))
+
+  // Apply initial lighting preset
+  updateLighting(lighting.value.preset)
 
   // Create camera
   const aspect = rendererContainer.value.clientWidth / rendererContainer.value.clientHeight
   camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 2000)
-  camera.position.z = 500
+
+  // Calculate camera position based on book dimensions for better framing
+  const maxDimension = Math.max(width.value, height.value, depth.value)
+  camera.position.z = maxDimension * 2.5
 
   // Add orbit controls
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.1
+  controls.autoRotate = false
+  controls.enableZoom = true
+  controls.minDistance = maxDimension * 1.2
+  controls.maxDistance = maxDimension * 5
 
   // Create book
   createBook()
@@ -117,30 +136,36 @@ function createBook() {
 
   // Create materials with textures
   const materials = {
-    cover: new THREE.MeshStandardMaterial({
+    cover: new THREE.MeshPhysicalMaterial({
       map: loadedTextures.value.cover,
-      roughness: 0.8,
+      roughness: 0.7,
       metalness: 0.1,
+      clearcoat: 0.3, // Slight glossy finish for book cover
+      clearcoatRoughness: 0.2,
     }),
-    back: new THREE.MeshStandardMaterial({
+    back: new THREE.MeshPhysicalMaterial({
       map: loadedTextures.value.back,
-      roughness: 0.8,
+      roughness: 0.7,
       metalness: 0.1,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.2,
     }),
-    spine: new THREE.MeshStandardMaterial({
+    spine: new THREE.MeshPhysicalMaterial({
       map: loadedTextures.value.spine,
-      roughness: 0.8,
+      roughness: 0.65,
       metalness: 0.1,
+      clearcoat: 0.4, // More glossy on spine
+      clearcoatRoughness: 0.1,
     }),
     side: new THREE.MeshStandardMaterial({
       map: loadedTextures.value.side,
-      roughness: 0.8,
-      metalness: 0.1,
+      roughness: 0.9, // Pages are rougher
+      metalness: 0.0,
     }),
     top: new THREE.MeshStandardMaterial({
       map: loadedTextures.value.top,
-      roughness: 0.8,
-      metalness: 0.1,
+      roughness: 0.9,
+      metalness: 0.0,
     }),
   }
 
@@ -245,6 +270,115 @@ watch(() => design.value.background, (newColor) => {
     scene.background = new THREE.Color(newColor)
   }
 })
+
+// Update lighting when preset changes
+watch(() => lighting.value.preset, (newPreset) => {
+  if (lights) {
+    updateLighting(newPreset)
+  }
+})
+
+// Function to update lighting based on preset
+function updateLighting(preset: string) {
+  if (!lights)
+    return
+
+  switch (preset) {
+    case 'studio':
+      // Studio lighting: balanced, professional look
+      lights.ambient.intensity = 0.6
+      lights.ambient.color.set(0xFFFFFF)
+
+      lights.main.intensity = 0.8
+      lights.main.color.set(0xFFFFFF)
+      lights.main.position.set(1, 0.5, 2)
+
+      lights.fill.intensity = 0.4
+      lights.fill.color.set(0xFFFFFF)
+      lights.fill.position.set(-2, 0.2, 1)
+
+      lights.rim.intensity = 0.5
+      lights.rim.color.set(0xFFFFFF)
+      lights.rim.position.set(0, 1, -2)
+      break
+
+    case 'soft':
+      // Soft lighting: gentle, diffused lighting
+      lights.ambient.intensity = 0.8
+      lights.ambient.color.set(0xFFFFFF)
+
+      lights.main.intensity = 0.5
+      lights.main.color.set(0xFFFFFF)
+      lights.main.position.set(0.5, 0.8, 1.5)
+
+      lights.fill.intensity = 0.5
+      lights.fill.color.set(0xFFFFFF)
+      lights.fill.position.set(-1, 0.5, 0.5)
+
+      lights.rim.intensity = 0.2
+      lights.rim.color.set(0xFFFFFF)
+      lights.rim.position.set(0, 0.5, -1)
+      break
+
+    case 'dramatic':
+      // Dramatic lighting: high contrast
+      lights.ambient.intensity = 0.3
+      lights.ambient.color.set(0x333333)
+
+      lights.main.intensity = 1.2
+      lights.main.color.set(0xFFFFFF)
+      lights.main.position.set(2, 1, 1)
+
+      lights.fill.intensity = 0.1
+      lights.fill.color.set(0x0077FF)
+      lights.fill.position.set(-2, 0, 1)
+
+      lights.rim.intensity = 0.8
+      lights.rim.color.set(0xFF3300)
+      lights.rim.position.set(0, 1, -3)
+      break
+
+    case 'warm':
+      // Warm lighting: golden hour effect
+      lights.ambient.intensity = 0.5
+      lights.ambient.color.set(0xFFEECC)
+
+      lights.main.intensity = 0.9
+      lights.main.color.set(0xFFCC88)
+      lights.main.position.set(1, 0.2, 2)
+
+      lights.fill.intensity = 0.3
+      lights.fill.color.set(0xFFEEDD)
+      lights.fill.position.set(-1.5, 0.2, 0.5)
+
+      lights.rim.intensity = 0.4
+      lights.rim.color.set(0xFF9900)
+      lights.rim.position.set(-0.5, 1, -2)
+      break
+
+    case 'cool':
+      // Cool lighting: cold, blue tinted light
+      lights.ambient.intensity = 0.5
+      lights.ambient.color.set(0xCCDDFF)
+
+      lights.main.intensity = 0.8
+      lights.main.color.set(0xAABBFF)
+      lights.main.position.set(1, 0.5, 2)
+
+      lights.fill.intensity = 0.4
+      lights.fill.color.set(0x8899FF)
+      lights.fill.position.set(-2, 0.2, 1)
+
+      lights.rim.intensity = 0.6
+      lights.rim.color.set(0x0044FF)
+      lights.rim.position.set(0, 1, -2)
+      break
+
+    default:
+      // Default to studio lighting
+      updateLighting('studio')
+  }
+}
 
 // Lifecycle hooks
 onMounted(async () => {
