@@ -453,81 +453,92 @@ function updateLighting(preset: string) {
     return
 
   switch (preset) {
-    case 'key':
-      // Key Light Dominant: Classic 3-point lighting with strong key light
-      // Emphasizes form and texture with stronger shadows
+    case 'studio':
+      // Studio Color-Accurate Lighting
+      // Optimized for showing book textures with precise color fidelity
 
-      // Low ambient light - allows the 3-point setup to define the lighting
-      lights.ambient.intensity = 0.2
-      lights.ambient.color.set(0xFFFFFF)
+      // Strong flat ambient light for texture visibility
+      lights.ambient.intensity = 0.7
+      lights.ambient.color.set(0xFFFFFF) // Pure white for color accuracy
 
-      // Strong key light - positioned at classic 45° angle in front and to the side
-      lights.main.intensity = 1.0
-      lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(1.2, 0.8, 1.2)
+      // Main front light - neutral positioning and color for accurate texture
+      lights.main.intensity = 0.6
+      lights.main.color.set(0xFFFFFF) // Pure white
+      lights.main.position.set(0, 0, 2) // Directly in front for even illumination
 
-      // Subtle fill light - just enough to control shadow density
+      // Minimal fill light - just enough to reduce harsh shadows
       lights.fill.intensity = 0.3
-      lights.fill.color.set(0xFFFFFF)
-      lights.fill.position.set(-0.8, 0.2, 0.5)
+      lights.fill.color.set(0xFFFFFF) // Pure white
+      lights.fill.position.set(-1, 0.3, 0.5)
 
-      // Subtle back light - creates separation from background
-      lights.rim.intensity = 0.4
-      lights.rim.color.set(0xFFFFF0) // Slightly warm rim light
-      lights.rim.position.set(0, 0.7, -1)
+      // Very subtle rim light for definition without affecting colors
+      lights.rim.intensity = 0.15
+      lights.rim.color.set(0xFFFFFF) // Pure white
+      lights.rim.position.set(0, 0.5, -1)
+
+      // Adjust renderer settings for maximum color accuracy
+      renderer.toneMappingExposure = 1.0
+      renderer.outputEncoding = THREE.sRGBEncoding
       break
 
-    case 'fill':
-      // Fill Light Dominant: Soft, even lighting with minimal shadows
-      // Perfect for showing details and color accuracy
+    case 'soft':
+      // Soft Neutral Lighting
+      // Even, gentle illumination that shows details without shadows
 
-      // Medium ambient light - creates general illumination
+      // Strong ambient light for reducing shadows
+      lights.ambient.intensity = 0.9
+      lights.ambient.color.set(0xFFFFFF)
+
+      // Soft main light for minimal directional shadows
+      lights.main.intensity = 0.4
+      lights.main.color.set(0xFFFFFF)
+      lights.main.position.set(0.5, 0.5, 1.5)
+
+      // Even fill light from multiple angles
+      lights.fill.intensity = 0.35
+      lights.fill.color.set(0xFFFFFF)
+      lights.fill.position.set(-0.7, 0.2, 0.7)
+
+      // Subtle rim for separation
+      lights.rim.intensity = 0.1
+      lights.rim.color.set(0xFFFFFF)
+      lights.rim.position.set(0, 0.3, -1)
+
+      // Adjust renderer for slightly softer appearance
+      renderer.toneMappingExposure = 1.05
+      renderer.outputEncoding = THREE.sRGBEncoding
+      break
+
+    case 'display':
+      // Premium Display Lighting
+      // Highlights textures with neutral but attractive lighting
+
+      // Medium ambient light
       lights.ambient.intensity = 0.4
       lights.ambient.color.set(0xFFFFFF)
 
-      // Moderate key light - less dramatic than standard key light
-      lights.main.intensity = 0.6
-      lights.main.color.set(0xFFFFF8) // Slightly warm key light
-      lights.main.position.set(0.8, 0.7, 1)
+      // Strong, slightly angled main light
+      lights.main.intensity = 0.9
+      lights.main.color.set(0xFFFFF8) // Very slightly warm
+      lights.main.position.set(1, 0.7, 1.5)
 
-      // Strong fill light - approaching key light intensity for low contrast
-      lights.fill.intensity = 0.5
-      lights.fill.color.set(0xFAFAFF) // Slightly cool fill light
-      lights.fill.position.set(-1, 0.5, 0.8)
+      // Medium fill light for shadow definition without darkness
+      lights.fill.intensity = 0.4
+      lights.fill.color.set(0xFFFFFF)
+      lights.fill.position.set(-1, 0.3, 0.7)
 
-      // Subtle back light - just enough for separation
-      lights.rim.intensity = 0.25
+      // Medium back light for edge definition
+      lights.rim.intensity = 0.3
       lights.rim.color.set(0xFFFFFA)
-      lights.rim.position.set(0, 0.6, -0.8)
+      lights.rim.position.set(0, 0.6, -1.2)
+
+      // Adjust renderer for slightly more vibrant appearance
+      renderer.toneMappingExposure = 1.1
+      renderer.outputEncoding = THREE.sRGBEncoding
       break
-
-    case 'back':
-      // Back Light Dominant: Dramatic rim lighting with defined edges
-      // Creates shape definition and separation with dramatic silhouette
-
-      // Minimal ambient light - allows for dramatic lighting
-      lights.ambient.intensity = 0.15
-      lights.ambient.color.set(0x404040)
-
-      // Subdued key light - present but not dominant
-      lights.main.intensity = 0.5
-      lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(1, 0.6, 1)
-
-      // Minimal fill light - maintains shadow detail without filling too much
-      lights.fill.intensity = 0.2
-      lights.fill.color.set(0xE6E6FA) // Slightly purple fill for interesting shadows
-      lights.fill.position.set(-1.2, 0.3, 0.5)
-
-      // Strong back light - the dominant light in the setup
-      lights.rim.intensity = 0.9
-      lights.rim.color.set(0xFFF8E0) // Warm back light for attractive glow
-      lights.rim.position.set(0, 0.8, -1.5)
-      break
-
     default:
-      // Default to key light setup
-      updateLighting('key')
+      // Default to studio lighting for best texture rendering
+      updateLighting('studio')
   }
 }
 
