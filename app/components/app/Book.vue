@@ -453,75 +453,81 @@ function updateLighting(preset: string) {
     return
 
   switch (preset) {
-    case 'neutral':
-      // Neutral studio lighting: 3-point lighting setup with perfect color accuracy
-      // Based on commercial product photography standards
-      lights.ambient.intensity = 0.5
+    case 'key':
+      // Key Light Dominant: Classic 3-point lighting with strong key light
+      // Emphasizes form and texture with stronger shadows
+
+      // Low ambient light - allows the 3-point setup to define the lighting
+      lights.ambient.intensity = 0.2
       lights.ambient.color.set(0xFFFFFF)
 
-      // Key light - 45° from front, slightly elevated
-      lights.main.intensity = 0.8
+      // Strong key light - positioned at classic 45° angle in front and to the side
+      lights.main.intensity = 1.0
       lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(1, 0.7, 1)
+      lights.main.position.set(1.2, 0.8, 1.2)
 
-      // Fill light - opposite key light, softer
-      lights.fill.intensity = 0.4
+      // Subtle fill light - just enough to control shadow density
+      lights.fill.intensity = 0.3
       lights.fill.color.set(0xFFFFFF)
-      lights.fill.position.set(-1, 0.3, 0.7)
+      lights.fill.position.set(-0.8, 0.2, 0.5)
 
-      // Rim/Back light - behind object for edge definition
-      lights.rim.intensity = 0.3
-      lights.rim.color.set(0xFFFFFF)
-      lights.rim.position.set(0, 0.5, -1)
+      // Subtle back light - creates separation from background
+      lights.rim.intensity = 0.4
+      lights.rim.color.set(0xFFFFF0) // Slightly warm rim light
+      lights.rim.position.set(0, 0.7, -1)
       break
 
-    case 'product':
-      // Classic product photography setup with softboxes
-      // Simulates professional catalog/e-commerce lighting
-      lights.ambient.intensity = 0.3
-      lights.ambient.color.set(0xFCFCFC)
+    case 'fill':
+      // Fill Light Dominant: Soft, even lighting with minimal shadows
+      // Perfect for showing details and color accuracy
 
-      // Main softbox - positioned for even coverage
-      lights.main.intensity = 0.7
-      lights.main.color.set(0xFFFFF8) // Very slightly warm
-      lights.main.position.set(0.5, 1, 1.2)
+      // Medium ambient light - creates general illumination
+      lights.ambient.intensity = 0.4
+      lights.ambient.color.set(0xFFFFFF)
 
-      // Large fill panel - reduces harsh shadows
+      // Moderate key light - less dramatic than standard key light
+      lights.main.intensity = 0.6
+      lights.main.color.set(0xFFFFF8) // Slightly warm key light
+      lights.main.position.set(0.8, 0.7, 1)
+
+      // Strong fill light - approaching key light intensity for low contrast
       lights.fill.intensity = 0.5
-      lights.fill.color.set(0xFAFAFF) // Very slightly cool
-      lights.fill.position.set(-1, 0.2, 0.5)
+      lights.fill.color.set(0xFAFAFF) // Slightly cool fill light
+      lights.fill.position.set(-1, 0.5, 0.8)
 
-      // Top rim light - creates professional edge definition
+      // Subtle back light - just enough for separation
       lights.rim.intensity = 0.25
       lights.rim.color.set(0xFFFFFA)
-      lights.rim.position.set(0, 1.2, -0.5)
+      lights.rim.position.set(0, 0.6, -0.8)
       break
 
-    case 'showcase':
-      // High-end display case lighting - dramatic but professional
-      // Creates a premium "featured product" effect
-      lights.ambient.intensity = 0.2
-      lights.ambient.color.set(0x303030)
+    case 'back':
+      // Back Light Dominant: Dramatic rim lighting with defined edges
+      // Creates shape definition and separation with dramatic silhouette
 
-      // Spotlight effect - focused beam
-      lights.main.intensity = 1.0
-      lights.main.color.set(0xFFFFF0) // Subtle warm spotlight
-      lights.main.position.set(0, 1.5, 1)
+      // Minimal ambient light - allows for dramatic lighting
+      lights.ambient.intensity = 0.15
+      lights.ambient.color.set(0x404040)
 
-      // Accent light - adds dimension
-      lights.fill.intensity = 0.25
-      lights.fill.color.set(0xF8F8FF) // Subtle cool fill
-      lights.fill.position.set(-1.5, 0.3, 0.5)
+      // Subdued key light - present but not dominant
+      lights.main.intensity = 0.5
+      lights.main.color.set(0xFFFFFF)
+      lights.main.position.set(1, 0.6, 1)
 
-      // Edge highlight - creates professional separation
-      lights.rim.intensity = 0.4
-      lights.rim.color.set(0xFFFAF0)
-      lights.rim.position.set(0.5, 0.3, -1.5)
+      // Minimal fill light - maintains shadow detail without filling too much
+      lights.fill.intensity = 0.2
+      lights.fill.color.set(0xE6E6FA) // Slightly purple fill for interesting shadows
+      lights.fill.position.set(-1.2, 0.3, 0.5)
+
+      // Strong back light - the dominant light in the setup
+      lights.rim.intensity = 0.9
+      lights.rim.color.set(0xFFF8E0) // Warm back light for attractive glow
+      lights.rim.position.set(0, 0.8, -1.5)
       break
 
     default:
-      // Default to neutral studio lighting
-      updateLighting('neutral')
+      // Default to key light setup
+      updateLighting('key')
   }
 }
 

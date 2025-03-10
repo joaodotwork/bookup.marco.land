@@ -22,9 +22,9 @@ const axes = ref([
 ])
 
 const lightingPresets = ref([
-  { label: 'Neutral', value: 'neutral', icon: 'i-mdi-camera' },
-  { label: 'Product', value: 'product', icon: 'i-mdi-package-variant' },
-  { label: 'Showcase', value: 'showcase', icon: 'i-mdi-spotlight' },
+  { label: 'Key', value: 'key', icon: 'i-mdi-spotlight-beam' },
+  { label: 'Fill', value: 'fill', icon: 'i-mdi-lightbulb-outline' },
+  { label: 'Back', value: 'back', icon: 'i-mdi-light-recessed' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1
