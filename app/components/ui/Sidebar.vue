@@ -81,7 +81,7 @@ const scale = computed({
     </BSection>
     <USeparator />
     <BSection label="Lighting">
-      <UButtonGroup orientation="horizontal" class="w-full col-span-2">
+      <div class="grid grid-cols-2 gap-2 col-span-2">
         <UButton
           v-for="preset in lightingPresets"
           :key="preset.value"
@@ -89,11 +89,12 @@ const scale = computed({
           size="xs"
           :color="lighting.preset === preset.value ? 'primary' : 'gray'"
           variant="soft"
-          class="flex-1"
-          :title="preset.label"
+          class="w-full"
           @click="lighting.preset = preset.value"
-        />
-      </UButtonGroup>
+        >
+          {{ preset.label }}
+        </UButton>
+      </div>
     </BSection>
     <USeparator />
     <!-- <BSection label="Export">

@@ -264,12 +264,28 @@ watch([width, height, depth], () => {
   }
 })
 
-// Update background color when it changes
-watch(() => design.value.background, (newColor) => {
+// Watch for design property changes (cover, back, spine, background)
+watch(() => design.value, async (newDesign, oldDesign) => {
   if (scene) {
-    scene.background = new THREE.Color(newColor)
+    // Update background color if it changed
+    if (newDesign.background !== oldDesign.background) {
+      scene.background = new THREE.Color(newDesign.background)
+    }
+
+    // Check if any textures have changed
+    const textureChanged = textureUrls.some(({ key }) =>
+      newDesign[key as keyof typeof newDesign] !== oldDesign[key as keyof typeof oldDesign],
+    )
+
+    // If textures changed, reload them and update the book
+    if (textureChanged) {
+      await reloadChangedTextures(newDesign, oldDesign)
+      if (book) {
+        createBook() // Recreate book with new textures
+      }
+    }
   }
-})
+}, { deep: true })
 
 // Update lighting when preset changes
 watch(() => lighting.value.preset, (newPreset) => {
@@ -277,6 +293,38 @@ watch(() => lighting.value.preset, (newPreset) => {
     updateLighting(newPreset)
   }
 })
+
+// Function to reload only textures that have changed
+async function reloadChangedTextures(newDesign: any, oldDesign: any) {
+  const promises = textureUrls.map(({ key, url }) => {
+    const designKey = key as keyof typeof newDesign
+    // Only reload if texture has changed
+    if (newDesign[designKey] !== oldDesign[designKey]) {
+      return new Promise<void>((resolve) => {
+        // If existing texture exists, dispose it to prevent memory leaks
+        if (loadedTextures.value[key]) {
+          loadedTextures.value[key].dispose()
+        }
+
+        textureLoader.load(
+          newDesign[designKey] || url,
+          (texture) => {
+            loadedTextures.value[key] = texture
+            resolve()
+          },
+          undefined,
+          () => {
+            console.warn(`Failed to load texture: ${newDesign[designKey] || url}`)
+            resolve()
+          },
+        )
+      })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(promises)
+}
 
 // Function to update lighting based on preset
 function updateLighting(preset: string) {
