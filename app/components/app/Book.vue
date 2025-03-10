@@ -543,6 +543,60 @@ function updateLighting(preset: string) {
       lights.rim.position.set(0, 0.5, -1.5)
       break
 
+    case 'sunset':
+      // Sunset lighting: warm golden/orange lighting with dramatic shadows
+      lights.ambient.intensity = 0.3
+      lights.ambient.color.set(0xFFA066)
+
+      lights.main.intensity = 1.0
+      lights.main.color.set(0xFF7F00) // Strong orange main light
+      lights.main.position.set(1.5, 0.2, 1)
+
+      lights.fill.intensity = 0.4
+      lights.fill.color.set(0x6666FF) // Blue fill light for complementary color
+      lights.fill.position.set(-1, 0.5, 0.5)
+
+      lights.rim.intensity = 0.5
+      lights.rim.color.set(0xFF4500) // Deep orange rim light
+      lights.rim.position.set(0, 0.2, -1.5)
+      break
+
+    case 'vintage':
+      // Vintage lighting: slightly desaturated warm lighting with vignette effect
+      lights.ambient.intensity = 0.5
+      lights.ambient.color.set(0xE6DFD1) // Slightly yellow-beige ambient
+
+      lights.main.intensity = 0.7
+      lights.main.color.set(0xF5D0A9) // Sepia-toned main light
+      lights.main.position.set(1, 0.8, 1)
+
+      lights.fill.intensity = 0.3
+      lights.fill.color.set(0xD8C7A9) // Desaturated warm fill
+      lights.fill.position.set(-0.8, 0.2, 0.5)
+
+      lights.rim.intensity = 0.2
+      lights.rim.color.set(0xF0E6D2) // Cream-colored rim light
+      lights.rim.position.set(0, 0.5, -1)
+      break
+
+    case 'night':
+      // Night lighting: low-key blue lighting with high contrast
+      lights.ambient.intensity = 0.05
+      lights.ambient.color.set(0x0A1A2A) // Very dark blue ambient
+
+      lights.main.intensity = 0.5
+      lights.main.color.set(0x3A70B0) // Medium blue main light
+      lights.main.position.set(1, 1.5, 1)
+
+      lights.fill.intensity = 0.2
+      lights.fill.color.set(0x192740) // Dark blue fill light
+      lights.fill.position.set(-1, 0.2, 0.5)
+
+      lights.rim.intensity = 0.7
+      lights.rim.color.set(0x66CCFF) // Bright blue rim light for edge definition
+      lights.rim.position.set(0, 0.5, -1)
+      break
+
     default:
       // Default to studio lighting
       updateLighting('studio')
