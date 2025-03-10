@@ -36,13 +36,23 @@ const textureUrls = [
   { key: 'top', url: '/images/book-top.jpg' },
 ]
 
-// Load all textures
+// Load all textures with color correction
 async function loadTextures() {
   const promises = textureUrls.map(({ key, url }) => {
     return new Promise<void>((resolve) => {
       textureLoader.load(
         design.value[key as keyof typeof design.value] || url,
         (texture) => {
+          // Apply texture settings for better color reproduction
+          texture.encoding = THREE.sRGBEncoding // Use sRGB encoding for correct colors
+          texture.anisotropy = 16 // Improve texture sharpness
+          texture.generateMipmaps = true
+          texture.minFilter = THREE.LinearMipmapLinearFilter
+          texture.magFilter = THREE.LinearFilter
+          texture.wrapS = THREE.ClampToEdgeWrapping
+          texture.wrapT = THREE.ClampToEdgeWrapping
+
+          // Store the texture
           loadedTextures.value[key] = texture
           resolve()
         },
@@ -75,6 +85,12 @@ function initThree() {
   })
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(rendererContainer.value.clientWidth, rendererContainer.value.clientHeight)
+
+  // Enable correct color output
+  renderer.outputEncoding = THREE.sRGBEncoding
+  renderer.gammaFactor = 2.2 // Standard gamma correction
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.0
 
   // Enable shadow mapping for better edges
   renderer.shadowMap.enabled = true
@@ -205,13 +221,18 @@ function createBook() {
     Object.assign(params, {
       flatShading: false,
       shadowSide: THREE.FrontSide,
-      envMapIntensity: 0.5, // Reduced to minimize light influence on texture colors
+      envMapIntensity: 0, // Disable environment map to preserve texture colors
       dithering: true, // Enable dithering for smoother gradients
 
       // Improve color accuracy
       colorWrite: true,
       transparent: false,
       fog: false,
+
+      // Crucial for accurate texture colors
+      color: new THREE.Color(0xFFFFFF), // Pure white base color to show texture as-is
+      emissive: new THREE.Color(0x000000), // No emission
+      emissiveIntensity: 0,
     })
   })
 
@@ -358,6 +379,15 @@ async function reloadChangedTextures(newDesign: any, oldDesign: any) {
         textureLoader.load(
           newDesign[designKey] || url,
           (texture) => {
+            // Apply texture settings for better color reproduction
+            texture.encoding = THREE.sRGBEncoding
+            texture.anisotropy = 16
+            texture.generateMipmaps = true
+            texture.minFilter = THREE.LinearMipmapLinearFilter
+            texture.magFilter = THREE.LinearFilter
+            texture.wrapS = THREE.ClampToEdgeWrapping
+            texture.wrapT = THREE.ClampToEdgeWrapping
+
             loadedTextures.value[key] = texture
             resolve()
           },
@@ -382,19 +412,19 @@ function updateLighting(preset: string) {
 
   switch (preset) {
     case 'studio':
-      // Studio lighting: neutral, balanced lighting for true color representation
-      lights.ambient.intensity = 0.7
+      // Studio lighting: neutral lighting optimized for color accuracy
+      lights.ambient.intensity = 1.0
       lights.ambient.color.set(0xFFFFFF)
 
-      lights.main.intensity = 0.6
+      lights.main.intensity = 0.3
       lights.main.color.set(0xFFFFFF)
-      lights.main.position.set(0, 1, 2)
+      lights.main.position.set(0, 1, 1)
 
-      lights.fill.intensity = 0.3
+      lights.fill.intensity = 0.2
       lights.fill.color.set(0xFFFFFF)
-      lights.fill.position.set(-1, 0, 1)
+      lights.fill.position.set(-1, 0, 0.5)
 
-      lights.rim.intensity = 0.2
+      lights.rim.intensity = 0.1
       lights.rim.color.set(0xFFFFFF)
       lights.rim.position.set(0, 0, -1)
       break
