@@ -17,161 +17,114 @@ const error = ref(null)
 const isLoading = ref(true)
 const canvasRef = ref(null)
 const rendererContainer = ref(null)
+const initializationTimeout = ref(null)
 
 const { design, dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
 const appStore = useAppStore()
 const { showSidebar } = storeToRefs(appStore)
 
-// Debug information gathering
-let debugInfo = {
-  resizeCount: 0,
-  lastWindowWidth: window.innerWidth,
-  lastContainerWidth: 0,
-  lastRenderTime: Date.now(),
-  resizeEvents: []
-}
-
-// Debug logging function
+// Simple logger - only outputs in dev mode for critical events
 function logDebug(message) {
-  const timestamp = new Date().toISOString().substr(11, 12) // HH:MM:SS.mmm
-  console.log(`[DEBUG ${timestamp}] ${message}`)
-  
-  // Keep track of resize events for debugging
-  if (message.includes('resize') || message.includes('width')) {
-    debugInfo.resizeEvents.push({
-      time: timestamp,
-      message,
-      windowWidth: window.innerWidth,
-      containerWidth: rendererContainer.value?.clientWidth || 0,
-      diffFromLast: window.innerWidth - debugInfo.lastWindowWidth
-    })
-    debugInfo.lastWindowWidth = window.innerWidth
+  if (process.dev) {
+    console.log(`[Book] ${message}`)
   }
 }
 
-// Advanced centering function with forced positioning
+// Simple book centering function
 function centerBook(forceRender = true) {
-  if (!book || !camera || !scene || !renderer || !rendererContainer.value) {
-    logDebug("centerBook: Missing required objects")
-    return
-  }
-  
-  debugInfo.resizeCount++
-  
-  // Get DOM element sizes and positions for debugging
-  const containerRect = rendererContainer.value.getBoundingClientRect()
-  const containerWidth = rendererContainer.value.clientWidth
-  const containerHeight = rendererContainer.value.clientHeight
-  
-  logDebug(`centerBook[${debugInfo.resizeCount}]: Container=${containerWidth}x${containerHeight}, `+
-           `Window=${window.innerWidth}x${window.innerHeight}, ` +
-           `DPR=${window.devicePixelRatio}`)
-  
-  // Store current values for comparison
-  debugInfo.lastContainerWidth = containerWidth
-  
-  // CRITICAL: Make sure book is at center of scene
-  if (book) {
+  try {
+    if (!book || !camera || !scene || !renderer || !rendererContainer.value) {
+      return
+    }
+
+    // Get container dimensions with fallback to window
+    const containerWidth = rendererContainer.value.clientWidth || window.innerWidth
+    const containerHeight = rendererContainer.value.clientHeight || window.innerHeight
+
+    // Skip invalid dimensions to prevent rendering issues
+    if (containerWidth <= 0 || containerHeight <= 0) {
+      return
+    }
+
+    // Make sure book is at center of scene
     book.position.set(0, 0, 0)
-  }
-  
-  // Calculate appropriate camera distance
-  const baseDistance = 5.5
-  const aspect = containerWidth / containerHeight
-  
-  // Determine if the viewport is portrait or landscape
-  const isPortrait = aspect < 1
-  const isNarrow = containerWidth < 600 // arbitrary threshold
-  
-  // Calculate camera distance based on viewport characteristics
-  let cameraDistance = baseDistance
-  if (isPortrait) {
-    // For portrait mode, move camera further back
-    cameraDistance = baseDistance * 1.2
-  } else if (isNarrow) {
-    // For narrow viewports, adjust camera position
-    cameraDistance = baseDistance * 1.1
-  }
-  
-  logDebug(`centerBook: Camera distance=${cameraDistance}, aspect=${aspect.toFixed(2)}, ` + 
-           `isPortrait=${isPortrait}, isNarrow=${isNarrow}`)
-  
-  // Position camera with calculated distance
-  if (camera) {
+
+    // Calculate appropriate camera distance
+    const baseDistance = 5.5
+    const aspect = containerWidth / containerHeight
+
+    // Determine if the viewport is portrait or landscape
+    const isPortrait = aspect < 1
+    const isNarrow = containerWidth < 600 // arbitrary threshold
+
+    // Calculate camera distance based on viewport characteristics
+    let cameraDistance = baseDistance
+    if (isPortrait) {
+      // For portrait mode, move camera further back
+      cameraDistance = baseDistance * 1.2
+    }
+    else if (isNarrow) {
+      // For narrow viewports, adjust camera position
+      cameraDistance = baseDistance * 1.1
+    }
+
+    // Position camera with calculated distance
     camera.position.set(0, 0, cameraDistance)
     camera.lookAt(0, 0, 0)
-    
+
     // Very important: update projection matrix
     camera.aspect = aspect
     camera.updateProjectionMatrix()
+
+    // Reset controls target and update
+    if (controls) {
+      controls.target.set(0, 0, 0)
+      controls.update()
+    }
+
+    if (forceRender && renderer && scene && camera) {
+      // Render the centered view
+      renderer.setSize(containerWidth, containerHeight, true)
+      renderer.render(scene, camera)
+    }
   }
-  
-  // Reset controls target and update
-  if (controls) {
-    controls.target.set(0, 0, 0)
-    controls.update()
-  }
-  
-  if (forceRender && renderer && scene && camera) {
-    // Render the centered view
-    renderer.setSize(containerWidth, containerHeight, true)
-    renderer.render(scene, camera)
-    
-    // Log time since last render
-    const now = Date.now()
-    logDebug(`centerBook: Rendered (${now - debugInfo.lastRenderTime}ms since last render)`)
-    debugInfo.lastRenderTime = now
+  catch (error) {
+    console.error('Error in centerBook:', error)
   }
 }
 
-// Function to handle resize and recentering
-const handleResize = () => {
+// Function to handle resize and recentering with debounce for performance
+const handleResize = debounce(() => {
   if (!renderer || !camera || !rendererContainer.value) {
-    logDebug('handleResize: Missing required objects')
     return
   }
 
-  // Get new dimensions directly from container
-  const width = rendererContainer.value.clientWidth
-  const height = rendererContainer.value.clientHeight
-  
-  // Calculate a hash of dimensions to detect real changes
-  const dimensionHash = `${width}_${height}`
-  
-  logDebug(`handleResize: Container dimensions=${width}x${height}, window=${window.innerWidth}x${window.innerHeight}`)
-
-  // Use centerBook function which now handles:
-  // - Setting proper camera aspect ratio
-  // - Updating projection matrix
-  // - Resizing renderer
-  // - Centering book in scene
-  // - Rendering the scene
-  centerBook(true)
-  
-  // Schedule additional centering attempts with increasing delays
-  // This ensures centering works even if DOM dimensions update asynchronously
-  setTimeout(() => centerBook(true), 50)
-  setTimeout(() => centerBook(true), 150)
-  setTimeout(() => centerBook(true), 300)
-}
+  try {
+    // Just call centerBook which handles everything we need
+    centerBook(true)
+  }
+  catch (error) {
+    console.error('Error in handleResize:', error)
+  }
+}, 100) // Debounce to prevent too many resize operations
 
 // Center the book in the viewport without complex zoom adaptation
 function adjustCameraForBookSize() {
   if (!book || !camera)
     return
-    
+
   // Set book position to center of scene
   if (book) {
     book.position.set(0, 0, 0)
   }
-  
+
   // Use a fixed, reasonable camera distance
   const cameraDistance = 5.5
-  
+
   // Set camera position with fixed distance, ensuring it's centered on origin
   camera.position.set(0, 0, cameraDistance)
   camera.lookAt(0, 0, 0)
-  
+
   // Ensure controls target remains at the center
   if (controls) {
     controls.target.set(0, 0, 0)
@@ -251,93 +204,71 @@ const easingFunctions = {
   },
 }
 
-// Animation function
+// Animation function - simplified for performance
 function animate() {
   try {
     if (!renderer || !scene || !camera || !book) {
-      console.warn('Animation skipped: missing required objects')
       animationFrameId = requestAnimationFrame(animate)
       return
     }
 
+    // Safety check to ensure loading state is cleared
+    if (isLoading.value && Date.now() - lastAnimationTime > 10000) {
+      isLoading.value = false
+    }
+
+    // Measure time delta for smooth animation
     const currentTime = Date.now()
     const deltaTime = (currentTime - lastAnimationTime) / 1000 // seconds
     lastAnimationTime = currentTime
 
-  // Apply manual rotation values (these will be the base rotation)
-  book.rotation.x = THREE.MathUtils.degToRad(rotation.value.x)
-  book.rotation.y = THREE.MathUtils.degToRad(rotation.value.y)
-  book.rotation.z = THREE.MathUtils.degToRad(rotation.value.z)
+    // Apply manual rotation values
+    book.rotation.x = THREE.MathUtils.degToRad(rotation.value.x)
+    book.rotation.y = THREE.MathUtils.degToRad(rotation.value.y)
+    book.rotation.z = THREE.MathUtils.degToRad(rotation.value.z)
 
-  // Apply additional rotation if animation is enabled
-  if (book && animation.value.enabled) {
-    // Use animation.value.speed as the base rate
-    const axis = animation.value.axis || 'Y'
-    // Ensure speed value is at least 1 to avoid division by zero
-    const speedValue = Math.max(1, animation.value.speed)
-    // Calibrate speed: 10 = normal (60 deg/sec), 1 = fast (600 deg/sec), 100 = slow (6 deg/sec)
-    const baseSpeed = 600 // degrees per second when speed is 1
-    const speed = baseSpeed / speedValue // inverse relationship: higher number = slower speed
+    // Apply animation if enabled (simplified)
+    if (animation.value.enabled) {
+      const axis = animation.value.axis || 'Y'
+      const speedValue = Math.max(1, animation.value.speed)
+      const speed = 60 / speedValue // degrees per second, simplified calculation
 
-    // Get the easing function or default to linear
-    const timingFunction = animation.value.timing || 'linear'
-    const ease = easingFunctions[timingFunction] || easingFunctions.linear
+      // Simple animation without complex easing
+      if (axis === 'Y') {
+        animationOffset.y += speed * deltaTime
+        book.rotation.y += THREE.MathUtils.degToRad(animationOffset.y)
+        animationOffset.y = animationOffset.y % 360
+      }
+      else if (axis === 'X') {
+        animationOffset.x += speed * deltaTime
+        book.rotation.x += THREE.MathUtils.degToRad(animationOffset.x)
+        animationOffset.x = animationOffset.x % 360
+      }
+      else if (axis === 'Z') {
+        animationOffset.z += speed * deltaTime
+        book.rotation.z += THREE.MathUtils.degToRad(animationOffset.z)
+        animationOffset.z = animationOffset.z % 360
+      }
 
-    // Update the continuous animation offset based on speed and easing
-    if (axis === 'Y') {
-      // Update progress for easing (0-1 range, loops every 3 seconds regardless of speed)
-      // This creates a gentle easing cycle that's independent of rotation speed
-      animationProgress.y = (animationProgress.y + deltaTime / 3) % 1
-
-      // Get easing multiplier (value between ~0.3-0.7 based on easing function)
-      const easingValue = ease(animationProgress.y)
-
-      // Apply rotation with easing multiplier
-      // For linear, this will be a consistent speed (using 0.5 multiplier)
-      // For other easing types, speed will vary smoothly based on the easing pattern
-      animationOffset.y += speed * deltaTime * easingValue * 2
-    }
-    else if (axis === 'X') {
-      // Update progress for easing
-      animationProgress.x = (animationProgress.x + deltaTime / 3) % 1
-
-      // Get easing multiplier
-      const easingValue = ease(animationProgress.x)
-
-      // Apply eased rotation
-      animationOffset.x += speed * deltaTime * easingValue * 2
-    }
-    else if (axis === 'Z') {
-      // Update progress for easing
-      animationProgress.z = (animationProgress.z + deltaTime / 3) % 1
-
-      // Get easing multiplier
-      const easingValue = ease(animationProgress.z)
-
-      // Apply eased rotation
-      animationOffset.z += speed * deltaTime * easingValue * 2
+      // Reset other offsets
+      if (axis !== 'X')
+        animationOffset.x = 0
+      if (axis !== 'Y')
+        animationOffset.y = 0
+      if (axis !== 'Z')
+        animationOffset.z = 0
     }
 
-    // Apply the animation offsets to the book rotation
-    book.rotation.x += THREE.MathUtils.degToRad(animationOffset.x)
-    book.rotation.y += THREE.MathUtils.degToRad(animationOffset.y)
-    book.rotation.z += THREE.MathUtils.degToRad(animationOffset.z)
+    // Render the scene
+    renderer.render(scene, camera)
 
-    // Reset the offsets after applying them
-    animationOffset.x = axis === 'X' ? animationOffset.x % 360 : 0
-    animationOffset.y = axis === 'Y' ? animationOffset.y % 360 : 0
-    animationOffset.z = axis === 'Z' ? animationOffset.z % 360 : 0
+    // Request next frame
+    animationFrameId = requestAnimationFrame(animate)
   }
-
-  // Render the scene
-  renderer.render(scene, camera)
-
-  // Request next frame
-  animationFrameId = requestAnimationFrame(animate)
-  } catch (error) {
+  catch (error) {
     console.error('Error in animation loop:', error)
-    isLoading.value = false // Ensure loading state is cleared on error
-    error.value = 'Animation error occurred' // Set error message
+    isLoading.value = false
+    error.value = 'Animation error occurred'
   }
 }
 
@@ -389,33 +320,79 @@ async function loadTextures() {
   try {
     console.log('Starting texture loading...')
 
-    console.log('Loading cover texture...')
-    textures.cover = await loadTexture('/images/book-cover.jpg')
+    // Create an array of texture loading promises for parallel loading
+    const texturePromises = [
+      { name: 'cover', url: '/images/book-cover.jpg' },
+      { name: 'back', url: '/images/book-back.jpg' },
+      { name: 'spine', url: '/images/book-spine.jpg' },
+      { name: 'side', url: '/images/book-side.jpg' },
+      { name: 'top', url: '/images/book-top.jpg' },
+    ].map(async ({ name, url }) => {
+      console.log(`Loading ${name} texture: ${url}`)
+      try {
+        textures[name] = await loadTexture(url)
+        console.log(`Successfully loaded ${name} texture`)
+        return { name, success: true }
+      }
+      catch (err) {
+        console.error(`Failed to load ${name} texture:`, err)
+        return { name, success: false, error: err }
+      }
+    })
 
-    console.log('Loading back texture...')
-    textures.back = await loadTexture('/images/book-back.jpg')
+    // Wait for all textures to load in parallel
+    const results = await Promise.all(texturePromises)
 
-    console.log('Loading spine texture...')
-    textures.spine = await loadTexture('/images/book-spine.jpg')
-
-    console.log('Loading side texture...')
-    textures.side = await loadTexture('/images/book-side.jpg')
-
-    console.log('Loading top texture...')
-    textures.top = await loadTexture('/images/book-top.jpg')
+    // Check if any textures failed to load
+    const failedTextures = results.filter(result => !result.success)
+    if (failedTextures.length > 0) {
+      const failedNames = failedTextures.map(result => result.name).join(', ')
+      console.error(`Failed to load the following textures: ${failedNames}`)
+      throw new Error(`Failed to load required textures: ${failedNames}`)
+    }
 
     // Override with user-provided textures if available
+    const customTexturePromises = []
+
     if (design.value.cover) {
       console.log('Loading custom cover texture...')
-      textures.cover = await loadTexture(design.value.cover)
+      customTexturePromises.push(
+        loadTexture(design.value.cover)
+          .then((texture) => {
+            textures.cover = texture
+            console.log('Custom cover texture loaded successfully')
+          })
+          .catch(err => console.error('Failed to load custom cover texture:', err)),
+      )
     }
+
     if (design.value.back) {
       console.log('Loading custom back texture...')
-      textures.back = await loadTexture(design.value.back)
+      customTexturePromises.push(
+        loadTexture(design.value.back)
+          .then((texture) => {
+            textures.back = texture
+            console.log('Custom back texture loaded successfully')
+          })
+          .catch(err => console.error('Failed to load custom back texture:', err)),
+      )
     }
+
     if (design.value.spine) {
       console.log('Loading custom spine texture...')
-      textures.spine = await loadTexture(design.value.spine)
+      customTexturePromises.push(
+        loadTexture(design.value.spine)
+          .then((texture) => {
+            textures.spine = texture
+            console.log('Custom spine texture loaded successfully')
+          })
+          .catch(err => console.error('Failed to load custom spine texture:', err)),
+      )
+    }
+
+    // Wait for custom textures to load (don't fail if custom textures fail)
+    if (customTexturePromises.length > 0) {
+      await Promise.all(customTexturePromises)
     }
 
     console.log('All textures loaded successfully')
@@ -519,19 +496,19 @@ function createBook() {
     delete materialPropsToUse.clearcoat
     delete materialPropsToUse.clearcoatRoughness
   }
-  
+
   // Choose the correct material class based on surface type
-  const MaterialClass = surface.value.type === 'glossy' 
-    ? THREE.MeshPhysicalMaterial 
+  const MaterialClass = surface.value.type === 'glossy'
+    ? THREE.MeshPhysicalMaterial
     : THREE.MeshStandardMaterial
 
   const materials = [
-    new MaterialClass({ ...materialPropsToUse, map: textures.side }),     // right side
-    new MaterialClass({ ...materialPropsToUse, map: textures.spine }),    // left side (spine)
-    new MaterialClass({ ...materialPropsToUse, map: textures.top }),      // top
-    new MaterialClass({ ...materialPropsToUse, map: textures.top }),      // bottom
-    new MaterialClass({ ...materialPropsToUse, map: textures.cover }),    // front (cover)
-    new MaterialClass({ ...materialPropsToUse, map: textures.back }),     // back
+    new MaterialClass({ ...materialPropsToUse, map: textures.side }), // right side
+    new MaterialClass({ ...materialPropsToUse, map: textures.spine }), // left side (spine)
+    new MaterialClass({ ...materialPropsToUse, map: textures.top }), // top
+    new MaterialClass({ ...materialPropsToUse, map: textures.top }), // bottom
+    new MaterialClass({ ...materialPropsToUse, map: textures.cover }), // front (cover)
+    new MaterialClass({ ...materialPropsToUse, map: textures.back }), // back
   ]
 
   // Create a single book mesh with all textures applied
@@ -547,7 +524,7 @@ function createBook() {
 
   // Scale the whole book
   bookGroup.scale.set(scale, scale, scale)
-  
+
   return bookGroup
 }
 
@@ -558,23 +535,40 @@ async function initBookScene() {
 
   isLoading.value = true
 
+  // Set a safety timeout to ensure loading state is cleared even if initialization fails
+  if (initializationTimeout.value) {
+    clearTimeout(initializationTimeout.value)
+  }
+
+  // Set a 15-second timeout to clear the loading state if initialization takes too long
+  initializationTimeout.value = setTimeout(() => {
+    console.error('Initialization timeout reached, forcing loading state to complete')
+    isLoading.value = false
+    error.value = 'Initialization timed out. Please try refreshing the page.'
+  }, 15000)
+
   // Initialize last animation time to current time
   // This ensures smooth animation from the first frame if animation is enabled
   lastAnimationTime = Date.now()
 
   try {
+    console.log('Starting Three.js initialization...')
+
     // Get dimensions
-    const width = rendererContainer.value.clientWidth
-    const height = rendererContainer.value.clientHeight
+    const width = rendererContainer.value.clientWidth || window.innerWidth
+    const height = rendererContainer.value.clientHeight || window.innerHeight
+
+    console.log(`Container dimensions: ${width}x${height}`)
 
     // Create renderer
     renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.value,
       antialias: true,
       alpha: true,
+      powerPreference: 'default', // Add explicit power preference
     })
     renderer.setSize(width, height)
-    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Limit pixel ratio to avoid performance issues
 
     // Configure shadow properties (will be enabled/disabled per preset)
     renderer.shadowMap.enabled = false
@@ -605,7 +599,7 @@ async function initBookScene() {
 
     // Create camera
     camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000) // Slightly narrower FOV
-    
+
     // Initial camera position - will be adjusted after book is created
     camera.position.set(0, 0, 5.5) // Default distance, will be adjusted based on book size
     camera.lookAt(0, 0, 0)
@@ -614,16 +608,27 @@ async function initBookScene() {
     setupLighting(lighting.value.preset)
 
     // Load textures
-    await loadTextures()
+    console.log('Starting texture loading process...')
+    try {
+      await loadTextures()
+      console.log('All textures loaded successfully')
+    }
+    catch (texError) {
+      console.error('Error loading textures:', texError)
+      throw new Error(`Failed to load textures: ${texError.message || 'Unknown texture error'}`)
+    }
 
     // Create and add book
+    console.log('Creating book geometry...')
     book = createBook()
     scene.add(book)
-    
+
     // Adjust camera position based on book size
+    console.log('Adjusting camera position...')
     adjustCameraForBookSize()
 
     // Add orbit controls
+    console.log('Setting up orbit controls...')
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
 
@@ -642,92 +647,45 @@ async function initBookScene() {
     // Start animation
     animate()
 
-    // ROBUST SOLUTION: Use multiple techniques to detect container size changes
-    
-    // TECHNIQUE 1: MutationObserver to detect style/attribute changes that might affect size
-    const mutationObserver = new MutationObserver((mutations) => {
-      logDebug(`MutationObserver: ${mutations.length} DOM mutations detected`)
+    // Single efficient ResizeObserver for handling size changes
+    const resizeObserver = new ResizeObserver(() => {
       handleResize()
     })
-    
-    // Start observing attributes and subtree changes that might affect layout
-    mutationObserver.observe(rendererContainer.value, { 
-      attributes: true, 
-      childList: true,
-      subtree: true,
-      attributeFilter: ['style', 'class', 'width', 'height']
-    })
-    
-    // TECHNIQUE 2: ResizeObserver to detect actual size changes to the container
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const { width, height } = entry.contentRect
-        logDebug(`ResizeObserver: Container size changed to ${width}x${height}`)
-        handleResize()
-      }
-    })
-    
-    // Start observing size changes
-    resizeObserver.observe(rendererContainer.value)
-    
-    // TECHNIQUE 3: Window resize listener for global window size changes
-    const windowResizeHandler = () => {
-      logDebug(`Window resize event: ${window.innerWidth}x${window.innerHeight}`)
-      handleResize()
-    }
-    window.addEventListener('resize', windowResizeHandler)
-    
-    // TECHNIQUE 4: Polling interval as a fallback - check for changes
-    // This is essential for catching changes that might be missed by other methods
-    const containerDimensions = { width: 0, height: 0 }
-    
-    // Store initial dimensions
-    containerDimensions.width = rendererContainer.value.clientWidth
-    containerDimensions.height = rendererContainer.value.clientHeight
-    
-    // Set up polling interval - critical for catching width reductions
-    const intervalId = setInterval(() => {
-      if (!rendererContainer.value) return
-      
-      const currWidth = rendererContainer.value.clientWidth
-      const currHeight = rendererContainer.value.clientHeight
-      
-      // Only process if there was an actual change
-      if (currWidth !== containerDimensions.width || currHeight !== containerDimensions.height) {
-        logDebug(`Polling detected size change: ${containerDimensions.width}x${containerDimensions.height} -> ${currWidth}x${currHeight}`)
-        
-        // Check for width reduction specifically
-        const widthReduced = currWidth < containerDimensions.width
-        if (widthReduced) {
-          logDebug('!!! WIDTH REDUCTION DETECTED !!!')
-        }
-        
-        // Update stored dimensions
-        containerDimensions.width = currWidth
-        containerDimensions.height = currHeight
-        
-        // Apply resize handling with extra attempts for width reduction
-        handleResize()
-      }
-    }, 100) // Check every 100ms
-    
-    // TECHNIQUE 5: Sidebar visibility change is treated specially 
-    // This will trigger resize handlers immediately when the sidebar state changes
-    
-    // TECHNIQUE 6: First-time and post-load application of centering
-    // Run initial resize handler to set up sizing and aspect ratios
-    handleResize()
-    
-    // Add additional centering after a brief delay to ensure the UI is settled
-    setTimeout(handleResize, 500)
 
+    // Observe the container element
+    resizeObserver.observe(rendererContainer.value)
+
+    // Window resize listener as a backup
+    window.addEventListener('resize', handleResize)
+
+    // Initial sizing
+    handleResize()
+
+    // Clear the safety timeout as we completed successfully
+    if (initializationTimeout.value) {
+      clearTimeout(initializationTimeout.value)
+      initializationTimeout.value = null
+    }
+
+    console.log('Three.js initialization complete!')
     isLoading.value = false
   }
   catch (e) {
     console.error('Error initializing Three.js scene:', e)
-    error.value = e instanceof Error ? e.message : 'Failed to initialize 3D view'
+    // Provide detailed error message to help diagnose the issue
+    const errorMessage = e instanceof Error
+      ? `${e.name}: ${e.message}`
+      : 'Failed to initialize 3D view with unknown error'
+    error.value = errorMessage
+
+    // Always ensure loading state is cleared on error
     isLoading.value = false
-    throw e
+
+    // Clear the safety timeout as we've already handled the error
+    if (initializationTimeout.value) {
+      clearTimeout(initializationTimeout.value)
+      initializationTimeout.value = null
+    }
   }
 }
 
@@ -1033,18 +991,18 @@ function resetCameraView() {
   // Reset camera to default position
   camera.position.set(0, 0, 5.5)
   camera.lookAt(0, 0, 0)
-  
+
   // Reset orbital controls
   controls.target.set(0, 0, 0)
   controls.reset()
-  
+
   // Disable any auto-rotation
   if (controls.autoRotate) {
     controls.autoRotate = false
   }
 
   controls.update()
-  
+
   // Use our centering function to ensure proper positioning
   centerBook()
 }
@@ -1143,54 +1101,27 @@ onBeforeUnmount(() => {
     scene.environment = null
   }
 
-  // Clean up all observers and event listeners
-  if (typeof resizeObserver !== 'undefined' && resizeObserver) {
+  // Clean up observers and event listeners
+  if (resizeObserver) {
     resizeObserver.disconnect()
   }
-  
-  if (typeof mutationObserver !== 'undefined' && mutationObserver) {
-    mutationObserver.disconnect()
-  }
-  
+
   // Remove window resize event listener
-  if (typeof windowResizeHandler !== 'undefined') {
-    window.removeEventListener('resize', windowResizeHandler)
-  }
-  
-  // Clear the polling interval
-  if (typeof intervalId !== 'undefined' && intervalId) {
-    clearInterval(intervalId)
-  }
-  
-  logDebug('All observers and event listeners cleaned up')
+  window.removeEventListener('resize', handleResize)
 })
 
 // Watch for sidebar visibility changes to update layout
-watch(() => showSidebar.value, (isVisible) => {
-  logDebug(`Sidebar visibility changed: ${isVisible ? 'VISIBLE' : 'HIDDEN'} - applying special handling`)
-  
-  // This is a critical point for proper centering since the sidebar affects the container width.
-  // Apply multiple resize and centering attempts with increasing delays to catch the whole transition
-  
-  // Immediate resize
-  handleResize()
-  
-  // Additional attempts with increasing delays
-  setTimeout(handleResize, 50)     // Beginning of transition
-  setTimeout(handleResize, 150)    // During transition
-  setTimeout(handleResize, 300)    // End of transition
-  setTimeout(handleResize, 500)    // After transition complete
+watch(() => showSidebar.value, () => {
+  // The ResizeObserver will handle this, but add one delayed resize
+  // to catch the end of the sidebar animation
+  setTimeout(handleResize, 300)
 })
 
 // Watch for dimension changes to ensure proper centering
 watch(() => [dimensions.value.width, dimensions.value.height, dimensions.value.depth, dimensions.value.scale], () => {
   if (book && camera) {
-    logDebug('Book dimensions changed - ensuring proper centering')
-    
-    // Apply multiple resize and centering attempts with increasing delays
+    // Single resize is sufficient
     handleResize()
-    setTimeout(handleResize, 50)
-    setTimeout(handleResize, 150)
   }
 })
 </script>
