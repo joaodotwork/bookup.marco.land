@@ -22,9 +22,9 @@ const axes = ref([
 ])
 
 const lightingPresets = ref([
+  { label: 'Ambient', value: 'ambient', icon: 'i-mdi-white-balance-sunny', description: 'Even, all-around illumination' },
   { label: 'Studio', value: 'studio', icon: 'i-mdi-camera', description: 'Balanced three-point lighting' },
   { label: 'Soft', value: 'soft', icon: 'i-mdi-lightbulb-outline', description: 'Gentle, diffused illumination' },
-  { label: 'Display', value: 'display', icon: 'i-mdi-spotlight', description: 'Dramatic showroom lighting' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1

@@ -28,6 +28,7 @@ const textures = {
 // Store light references so we can adjust them based on presets
 const lights = {
   ambient: null,
+  hemisphere: null,
   main: null,
   fill: null,
   rim: null,
@@ -589,11 +590,12 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
 }, { deep: true })
 
 // Configure lighting based on selected preset
-function setupLighting(preset = 'studio') {
+function setupLighting(preset = 'ambient') {
   if (!scene || !renderer) return
   
   // Clear existing lights before adding new ones
   if (lights.ambient) scene.remove(lights.ambient)
+  if (lights.hemisphere) scene.remove(lights.hemisphere)
   if (lights.main) scene.remove(lights.main)
   if (lights.fill) scene.remove(lights.fill)
   if (lights.rim) scene.remove(lights.rim)
@@ -603,6 +605,21 @@ function setupLighting(preset = 'studio') {
   
   // Create lighting setups based on preset
   switch (preset) {
+    case 'ambient':
+      // Ambient lighting - even illumination from all directions
+      // Use only a hemisphere light for truly ambient lighting
+      lights.hemisphere = new THREE.HemisphereLight(
+        0xFFFFFF, // Sky color
+        0xFFFAF0, // Ground color (slightly warm)
+        1.0       // Intensity
+      )
+      
+      // No directional lights for this preset
+      lights.main = null
+      lights.fill = null
+      lights.rim = null
+      break
+      
     case 'studio':
       // Studio lighting - balanced, professional setup with three-point lighting
       lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.5)
@@ -625,45 +642,19 @@ function setupLighting(preset = 'studio') {
       lights.rim = new THREE.DirectionalLight(0xF8F8FF, 0.2)
       lights.rim.position.set(3, -1, -2)
       break
-    
-    case 'display':
-      // Display lighting - dramatic, showroom-style with focused lights
-      
-      // Enable shadows for dramatic effect
-      renderer.shadowMap.enabled = true
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap
-      
-      lights.ambient = new THREE.AmbientLight(0x333333, 0.3) // Dark ambient
-      
-      // Main spotlight with shadows
-      lights.main = new THREE.SpotLight(0xFFFFFF, 1.5, 30, Math.PI/4, 0.3)
-      lights.main.position.set(0, 5, 10)
-      lights.main.castShadow = true
-      lights.main.shadow.mapSize.width = 1024
-      lights.main.shadow.mapSize.height = 1024
-      lights.main.shadow.camera.near = 1
-      lights.main.shadow.camera.far = 30
-      
-      // Cool fill light
-      lights.fill = new THREE.DirectionalLight(0xCCE0FF, 0.4)
-      lights.fill.position.set(-5, 3, 0)
-      
-      // Strong rim light
-      lights.rim = new THREE.DirectionalLight(0xFFD700, 0.5) // Slightly golden rim light
-      lights.rim.position.set(7, -3, -5)
-      break
       
     default:
-      // Fallback to studio lighting if preset is unknown
-      setupLighting('studio')
+      // Fallback to ambient lighting if preset is unknown
+      setupLighting('ambient')
       return
   }
   
-  // Add all lights to the scene
-  scene.add(lights.ambient)
-  scene.add(lights.main)
-  scene.add(lights.fill)
-  scene.add(lights.rim)
+  // Add all lights to the scene (only add if they exist)
+  if (lights.ambient) scene.add(lights.ambient)
+  if (lights.hemisphere) scene.add(lights.hemisphere)
+  if (lights.main) scene.add(lights.main)
+  if (lights.fill) scene.add(lights.fill)
+  if (lights.rim) scene.add(lights.rim)
 }
 
 // Function to reset camera position and zoom
