@@ -29,16 +29,18 @@ function toggleSidebar() {
       </ClientOnly>
     </div>
 
-    <!-- Sidebar toggle button - vertically centered at the right edge -->
+    <!-- Sidebar toggle button - vertically centered with dock icons to better represent functionality -->
     <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300" :style="{ right: showSidebar ? '308px' : '4px' }">
-      <UButton
-        size="sm"
-        :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'"
-        variant="soft"
-        color="neutral"
-        class="w-7 opacity-80 hover:opacity-100"
-        @click="toggleSidebar"
-      />
+      <UTooltip :text="showSidebar ? 'Hide sidebar' : 'Show sidebar'">
+        <UButton
+          size="sm"
+          :icon="showSidebar ? 'i-mdi-dock-right' : 'i-mdi-dock-left'"
+          variant="soft"
+          color="neutral"
+          class="w-7 opacity-80 hover:opacity-100"
+          @click="toggleSidebar"
+        />
+      </UTooltip>
     </div>
 
     <!-- Sidebar with slide transition -->

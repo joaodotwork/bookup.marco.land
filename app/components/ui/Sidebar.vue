@@ -66,7 +66,7 @@ function resetRotation() {
 </script>
 
 <template>
-  <aside class="h-[100svh] border-l border-[var(--ui-border)] overflow-auto bg-white dark:bg-[var(--color-gray-950)]">
+  <aside class="h-[100svh] border-l border-gray-200 shadow-lg overflow-auto bg-white dark:bg-[var(--color-gray-950)] dark:border-gray-800">
     <USeparator />
     <BSection label="Design">
       <BInputFile file="cover" label="Cover" />
