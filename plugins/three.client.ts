@@ -1,31 +1,18 @@
 // Three.js client-side plugin
 // This ensures Three.js is only loaded in the browser
 
-// Dynamically import Three.js and related modules
-// This helps prevent SSR issues and enables code-splitting
-async function loadThreeJsDependencies() {
-  try {
-    // Load THREE.js core
-    const THREEModule = await import('three')
+// Import THREE.js directly for better SSR handling
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-    // Load OrbitControls from examples
-    const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls')
-
-    return {
-      THREE: THREEModule,
-      OrbitControls,
-    }
-  }
-  catch (error) {
-    console.error('Failed to load Three.js dependencies:', error)
-    return null
-  }
-}
+// Simple check to verify imports worked
+const isThreeLoaded = typeof THREE === 'object' && THREE !== null
+const isOrbitControlsLoaded = typeof OrbitControls === 'function'
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined'
 
-export default defineNuxtPlugin(async () => {
+export default defineNuxtPlugin(() => {
   // Mock classes for SSR
   class MockOrbitControls {
     constructor() {
@@ -65,43 +52,43 @@ export default defineNuxtPlugin(async () => {
     ClampToEdgeWrapping: 'mock',
   }
 
-  // If not in browser, provide mock objects
+  // SSR - provide mock objects
   if (!isBrowser) {
     console.warn('THREE.js not available during SSR. Using mock objects.')
-
     return {
       provide: {
         THREE: mockTHREE,
         OrbitControls: MockOrbitControls,
+        isThreeReady: false,
       },
     }
   }
 
-  // For browser environment, attempt to load Three.js
-  try {
-    const modules = await loadThreeJsDependencies()
-
-    if (!modules) {
-      throw new Error('Failed to load Three.js modules')
-    }
-
-    // Successfully loaded Three.js in browser
+  // Log Three.js loading status in browser
+  console.log('Three.js loaded status:', { 
+    isThreeLoaded, 
+    isOrbitControlsLoaded,
+    isBrowser
+  })
+  
+  // For browser environment - try to use the imported modules
+  if (isThreeLoaded && isOrbitControlsLoaded) {
     return {
       provide: {
-        THREE: modules.THREE,
-        OrbitControls: modules.OrbitControls,
+        THREE,
+        OrbitControls,
+        isThreeReady: true,
       },
     }
   }
-  catch (error) {
-    console.error('Error setting up Three.js plugin:', error)
-
-    // Fallback to mock objects even in browser if loading failed
-    return {
-      provide: {
-        THREE: mockTHREE,
-        OrbitControls: MockOrbitControls,
-      },
-    }
+  
+  // Fallback to mock objects if imports failed
+  console.error('Error: Three.js modules not loaded correctly')
+  return {
+    provide: {
+      THREE: mockTHREE,
+      OrbitControls: MockOrbitControls,
+      isThreeReady: false,
+    },
   }
 })
