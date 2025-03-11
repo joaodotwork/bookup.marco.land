@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // Simple debounce utility
 function debounce(fn, delay) {
   let timeout
-  return function(...args) {
+  return function (...args) {
     clearTimeout(timeout)
     timeout = setTimeout(() => fn.apply(this, args), delay)
   }
@@ -24,21 +24,23 @@ const { showSidebar } = storeToRefs(appStore)
 
 // Function to handle resize and recentering
 const handleResize = debounce(() => {
-  if (!renderer || !camera || !rendererContainer.value) return
-  
+  if (!renderer || !camera || !rendererContainer.value)
+    return
+
   // Get new dimensions
   const width = rendererContainer.value.clientWidth
   const height = rendererContainer.value.clientHeight
-  
+
   // Update camera aspect ratio
   camera.aspect = width / height
   camera.updateProjectionMatrix()
-  
+
   // Update renderer size
   renderer.setSize(width, height)
-  
+
   // Re-render the scene
-  if (scene) renderer.render(scene, camera)
+  if (scene)
+    renderer.render(scene, camera)
 }, 300)
 
 let renderer = null
@@ -87,40 +89,44 @@ let lastAnimationTime = Date.now()
 const easingFunctions = {
   // Linear is consistent speed
   'linear': t => 0.5,
-  
+
   // Ease with smooth curve (no sudden stops)
-  'ease': t => {
+  'ease': (t) => {
     // Sine wave oscillation (0.5-1.0)
     return 0.75 + Math.sin(t * Math.PI * 2) * 0.25
   },
-  
+
   // Ease-in starts slower, gradually speeds up
-  'ease-in': t => {
+  'ease-in': (t) => {
     // Smoother sine-based variation (0.3-0.7)
-    return 0.5 + Math.sin(t * Math.PI * 2 - Math.PI/2) * 0.2
+    return 0.5 + Math.sin(t * Math.PI * 2 - Math.PI / 2) * 0.2
   },
-  
+
   // Ease-out starts faster, gradually slows down
-  'ease-out': t => {
+  'ease-out': (t) => {
     // Inverse of ease-in
-    return 0.5 - Math.sin(t * Math.PI * 2 - Math.PI/2) * 0.2
+    return 0.5 - Math.sin(t * Math.PI * 2 - Math.PI / 2) * 0.2
   },
-  
+
   // Ease-in-out combines both patterns
-  'ease-in-out': t => {
+  'ease-in-out': (t) => {
     // More pronounced sine wave (0.25-0.75)
     return 0.5 + Math.sin(t * Math.PI * 2) * 0.25
-  }
+  },
 }
 
 // Animation function
 function animate() {
-  if (!renderer || !scene || !camera || !book)
-    return
+  try {
+    if (!renderer || !scene || !camera || !book) {
+      console.warn('Animation skipped: missing required objects')
+      animationFrameId = requestAnimationFrame(animate)
+      return
+    }
 
-  const currentTime = Date.now()
-  const deltaTime = (currentTime - lastAnimationTime) / 1000 // seconds
-  lastAnimationTime = currentTime
+    const currentTime = Date.now()
+    const deltaTime = (currentTime - lastAnimationTime) / 1000 // seconds
+    lastAnimationTime = currentTime
 
   // Apply manual rotation values (these will be the base rotation)
   book.rotation.x = THREE.MathUtils.degToRad(rotation.value.x)
@@ -146,10 +152,10 @@ function animate() {
       // Update progress for easing (0-1 range, loops every 3 seconds regardless of speed)
       // This creates a gentle easing cycle that's independent of rotation speed
       animationProgress.y = (animationProgress.y + deltaTime / 3) % 1
-      
+
       // Get easing multiplier (value between ~0.3-0.7 based on easing function)
       const easingValue = ease(animationProgress.y)
-      
+
       // Apply rotation with easing multiplier
       // For linear, this will be a consistent speed (using 0.5 multiplier)
       // For other easing types, speed will vary smoothly based on the easing pattern
@@ -158,20 +164,20 @@ function animate() {
     else if (axis === 'X') {
       // Update progress for easing
       animationProgress.x = (animationProgress.x + deltaTime / 3) % 1
-      
+
       // Get easing multiplier
       const easingValue = ease(animationProgress.x)
-      
+
       // Apply eased rotation
       animationOffset.x += speed * deltaTime * easingValue * 2
     }
     else if (axis === 'Z') {
       // Update progress for easing
       animationProgress.z = (animationProgress.z + deltaTime / 3) % 1
-      
+
       // Get easing multiplier
       const easingValue = ease(animationProgress.z)
-      
+
       // Apply eased rotation
       animationOffset.z += speed * deltaTime * easingValue * 2
     }
@@ -192,6 +198,11 @@ function animate() {
 
   // Request next frame
   animationFrameId = requestAnimationFrame(animate)
+  } catch (error) {
+    console.error('Error in animation loop:', error)
+    isLoading.value = false // Ensure loading state is cleared on error
+    error.value = 'Animation error occurred' // Set error message
+  }
 }
 
 // Load texture with error handling
@@ -211,19 +222,19 @@ function loadTexture(url) {
       url,
       (texture) => {
         console.log(`Successfully loaded texture: ${url}`)
-        
+
         // Set the correct color space for the texture
         // Most images are in sRGB color space
         texture.colorSpace = THREE.SRGBColorSpace
-        
+
         // Ensure texture wrapping and filtering are set correctly
         texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
         texture.minFilter = THREE.LinearMipmapLinearFilter
         texture.magFilter = THREE.LinearFilter
-        
+
         // Generate mipmaps for better rendering at different distances
         texture.generateMipmaps = true
-        
+
         resolve(texture)
       },
       (event) => {
@@ -299,62 +310,62 @@ function createBook() {
 
   // Create materials using loaded textures - with spine texture on the left side
   // Material properties vary based on selected surface type
-  let materialProps;
-  
+  let materialProps
+
   // Configure material properties based on selected surface type
-  switch(surface.value.type) {
+  switch (surface.value.type) {
     case 'glossy':
       materialProps = {
-        roughness: 0.35,      // Increased roughness to reduce spot reflections
-        metalness: 0.05,      // Reduced metalness for more subtle sheen
-        envMapIntensity: 0.8, // Lower reflection intensity for more diffuse look
-        flatShading: false,   // Smooth surface
-        clearcoat: 0.3,       // Slight clearcoat for laminated book look
-        clearcoatRoughness: 0.4, // Diffuse the clearcoat reflections
-      };
-      break;
-      
+        roughness: 0.55, // Higher roughness to further reduce spot reflections
+        metalness: 0.02, // Lower metalness for more subtle sheen
+        envMapIntensity: 0.5, // Reduced reflection intensity
+        flatShading: false, // Smooth surface
+        clearcoat: 0.2, // Lower clearcoat for more subtle laminated look
+        clearcoatRoughness: 0.5, // Medium roughness for clearcoat layer
+      }
+      break
+
     case 'matte':
       materialProps = {
-        roughness: 0.7,       // Higher roughness for matte, non-reflective finish
-        metalness: 0.0,       // No metallic look
+        roughness: 0.7, // Higher roughness for matte, non-reflective finish
+        metalness: 0.0, // No metallic look
         envMapIntensity: 0.5, // Minimal reflections
-        flatShading: false,   // Smooth surface
-      };
-      break;
-      
+        flatShading: false, // Smooth surface
+      }
+      break
+
     case 'uncoated':
       materialProps = {
-        roughness: 0.9,       // Very high roughness for uncoated texture
-        metalness: 0.0,       // No metallic look
+        roughness: 0.9, // Very high roughness for uncoated texture
+        metalness: 0.0, // No metallic look
         envMapIntensity: 0.3, // Minimal reflections
-        flatShading: false,   // Even surface (we'll use normal map for texture)
-      };
-      
+        flatShading: false, // Even surface (we'll use normal map for texture)
+      }
+
       // Add a subtle paper texture for uncoated style
       // We'll use a procedural bump map to simulate paper texture
-      const textureSize = 256;
-      const data = new Uint8Array(textureSize * textureSize * 4);
-      
+      const textureSize = 256
+      const data = new Uint8Array(textureSize * textureSize * 4)
+
       // Create subtle random variations for paper texture
       for (let i = 0; i < textureSize * textureSize * 4; i += 4) {
         // Random value between 120-135 for subtle paper texture
-        const value = 127 + Math.floor(Math.random() * 16) - 8;
-        data[i] = data[i+1] = data[i+2] = value;
-        data[i+3] = 255; // Alpha
+        const value = 127 + Math.floor(Math.random() * 16) - 8
+        data[i] = data[i + 1] = data[i + 2] = value
+        data[i + 3] = 255 // Alpha
       }
-      
+
       // Create normal map from the grayscale texture
-      const paperTexture = new THREE.DataTexture(data, textureSize, textureSize, THREE.RGBAFormat);
-      paperTexture.wrapS = paperTexture.wrapT = THREE.RepeatWrapping;
-      paperTexture.repeat.set(4, 4); // Repeat the texture to make it less obvious
-      paperTexture.needsUpdate = true;
-      
+      const paperTexture = new THREE.DataTexture(data, textureSize, textureSize, THREE.RGBAFormat)
+      paperTexture.wrapS = paperTexture.wrapT = THREE.RepeatWrapping
+      paperTexture.repeat.set(4, 4) // Repeat the texture to make it less obvious
+      paperTexture.needsUpdate = true
+
       // Add the paper texture to material properties
-      materialProps.normalMap = paperTexture;
-      materialProps.normalScale = new THREE.Vector2(0.05, 0.05); // Subtle effect
-      break;
-      
+      materialProps.normalMap = paperTexture
+      materialProps.normalScale = new THREE.Vector2(0.05, 0.05) // Subtle effect
+      break
+
     default:
       // Default to uncoated if type is unknown
       materialProps = {
@@ -362,22 +373,35 @@ function createBook() {
         metalness: 0.0,
         envMapIntensity: 0.3,
         flatShading: false,
-      };
+      }
+  }
+
+  // Create materials - use MeshPhysicalMaterial for glossy, MeshStandardMaterial for others
+  // First remove clearcoat properties if not glossy to avoid warnings
+  const materialPropsToUse = { ...materialProps }
+  if (surface.value.type !== 'glossy') {
+    delete materialPropsToUse.clearcoat
+    delete materialPropsToUse.clearcoatRoughness
   }
   
+  // Choose the correct material class based on surface type
+  const MaterialClass = surface.value.type === 'glossy' 
+    ? THREE.MeshPhysicalMaterial 
+    : THREE.MeshStandardMaterial
+
   const materials = [
-    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.side }), // right side
-    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.spine }), // left side (spine)
-    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.top }), // top
-    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.top }), // bottom
-    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.cover }), // front (cover)
-    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.back }), // back
+    new MaterialClass({ ...materialPropsToUse, map: textures.side }),     // right side
+    new MaterialClass({ ...materialPropsToUse, map: textures.spine }),    // left side (spine)
+    new MaterialClass({ ...materialPropsToUse, map: textures.top }),      // top
+    new MaterialClass({ ...materialPropsToUse, map: textures.top }),      // bottom
+    new MaterialClass({ ...materialPropsToUse, map: textures.cover }),    // front (cover)
+    new MaterialClass({ ...materialPropsToUse, map: textures.back }),     // back
   ]
 
   // Create a single book mesh with all textures applied
   const bookGeometry = new THREE.BoxGeometry(width, height, depth)
   const bookMesh = new THREE.Mesh(bookGeometry, materials)
-  
+
   // Enable shadows for the book
   bookMesh.receiveShadow = true
   bookMesh.castShadow = true
@@ -387,7 +411,7 @@ function createBook() {
 
   // Scale the whole book
   bookGroup.scale.set(scale, scale, scale)
-
+  
   return bookGroup
 }
 
@@ -397,7 +421,7 @@ async function initBookScene() {
     return
 
   isLoading.value = true
-  
+
   // Initialize last animation time to current time
   // This ensures smooth animation from the first frame if animation is enabled
   lastAnimationTime = Date.now()
@@ -415,14 +439,14 @@ async function initBookScene() {
     })
     renderer.setSize(width, height)
     renderer.setPixelRatio(window.devicePixelRatio)
-    
+
     // Configure shadow properties (will be enabled/disabled per preset)
-    renderer.shadowMap.enabled = false 
+    renderer.shadowMap.enabled = false
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
-    
+
     // Set the correct output color space for proper color rendering
     renderer.outputColorSpace = THREE.SRGBColorSpace
-    
+
     // Enable tone mapping for more realistic rendering
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
@@ -430,16 +454,16 @@ async function initBookScene() {
     // Create scene
     scene = new THREE.Scene()
     scene.background = new THREE.Color(design.value.background || '#0072FF')
-    
+
     // Add a subtle environment map for more realistic reflections
     const pmremGenerator = new THREE.PMREMGenerator(renderer)
     pmremGenerator.compileEquirectangularShader()
-    
+
     // Create a simple environment map using the scene background color
     const envColor = new THREE.Color(design.value.background || '#0072FF')
     const cubeRenderTarget = pmremGenerator.fromScene(
       new THREE.Scene().add(new THREE.HemisphereLight(envColor.getHex(), 0x000000, 1)),
-      0.04
+      0.04,
     )
     scene.environment = cubeRenderTarget.texture
 
@@ -543,23 +567,24 @@ watch(() => [design.value.cover, design.value.back, design.value.spine], async (
 
 // Watch for background color changes
 watch(() => design.value.background, (newColor) => {
-  if (!scene || !renderer) return
-  
+  if (!scene || !renderer)
+    return
+
   // Update scene background color
   const color = new THREE.Color(newColor || '#0072FF')
   scene.background = color
-  
+
   // Update environment map to match the new background color
   const pmremGenerator = new THREE.PMREMGenerator(renderer)
   pmremGenerator.compileEquirectangularShader()
-  
+
   const envScene = new THREE.Scene()
   envScene.add(new THREE.HemisphereLight(color.getHex(), 0x000000, 1))
   const cubeRenderTarget = pmremGenerator.fromScene(envScene, 0.04)
-  
+
   // Update scene environment
   scene.environment = cubeRenderTarget.texture
-  
+
   // Dispose of the old render target to prevent memory leaks
   pmremGenerator.dispose()
 })
@@ -576,7 +601,7 @@ watch(() => surface.value.type, async (newSurfaceType) => {
 
   try {
     console.log(`Surface type changed to: ${newSurfaceType}`)
-    
+
     // Remove the old book from the scene
     scene.remove(book)
 
@@ -616,7 +641,7 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
   // and ensure animation starts from the current position (not from zero)
   if (newAnimation.enabled && !oldAnimation.enabled) {
     lastAnimationTime = Date.now()
-    
+
     // Reset animation offsets and progress counters
     // This is important to start with a clean state
     animationOffset.x = 0
@@ -625,7 +650,7 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
     animationProgress.x = 0
     animationProgress.y = 0
     animationProgress.z = 0
-    
+
     // Update rotation values to match the current visual position of the book
     // This ensures animation starts from the current rotation, not from default values
     if (book) {
@@ -647,13 +672,13 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
       rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
       rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
     }
-    
+
     // Reset accumulated offsets since we've stored the position in rotation values
     // This prevents any further animation calculations from affecting the position
     animationOffset.x = 0
     animationOffset.y = 0
     animationOffset.z = 0
-    
+
     // Reset progress values to clean state
     animationProgress.x = 0
     animationProgress.y = 0
@@ -669,7 +694,7 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
       rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
       rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
     }
-    
+
     // Reset all offsets and progress values
     animationOffset.x = 0
     animationOffset.y = 0
@@ -688,7 +713,7 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
       rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
       rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
     }
-    
+
     // Reset all progress values
     animationProgress.x = 0
     animationProgress.y = 0
@@ -698,18 +723,24 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
 
 // Configure lighting based on selected preset
 function setupLighting(preset = 'ambient') {
-  if (!scene || !renderer) return
-  
+  if (!scene || !renderer)
+    return
+
   // Clear existing lights before adding new ones
-  if (lights.ambient) scene.remove(lights.ambient)
-  if (lights.hemisphere) scene.remove(lights.hemisphere)
-  if (lights.main) scene.remove(lights.main)
-  if (lights.fill) scene.remove(lights.fill)
-  if (lights.rim) scene.remove(lights.rim)
-  
+  if (lights.ambient)
+    scene.remove(lights.ambient)
+  if (lights.hemisphere)
+    scene.remove(lights.hemisphere)
+  if (lights.main)
+    scene.remove(lights.main)
+  if (lights.fill)
+    scene.remove(lights.fill)
+  if (lights.rim)
+    scene.remove(lights.rim)
+
   // Reset shadow settings
   renderer.shadowMap.enabled = false
-  
+
   // Create lighting setups based on preset
   switch (preset) {
     case 'ambient':
@@ -718,18 +749,18 @@ function setupLighting(preset = 'ambient') {
       lights.hemisphere = new THREE.HemisphereLight(
         0xFFFFFF, // Sky color
         0xFFFAF0, // Ground color (slightly warm)
-        2.5       // Increased intensity (2.5) for much brighter appearance
+        2.5, // Increased intensity (2.5) for much brighter appearance
       )
-      
+
       // Add a subtle ambient light to ensure even illumination from all directions
       lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.4)
-      
+
       // No directional lights for this preset
       lights.main = null
       lights.fill = null
       lights.rim = null
       break
-      
+
     case 'studio':
       // Studio lighting - balanced, professional setup with three-point lighting
       lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.5)
@@ -740,7 +771,7 @@ function setupLighting(preset = 'ambient') {
       lights.rim = new THREE.DirectionalLight(0xFFFFFF, 0.5) // Rim/back light
       lights.rim.position.set(5, -2, -4)
       break
-    
+
     case 'soft':
       // Soft lighting - diffused, gentle lighting with less contrast
       lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.8)
@@ -752,19 +783,24 @@ function setupLighting(preset = 'ambient') {
       lights.rim = new THREE.DirectionalLight(0xF8F8FF, 0.2)
       lights.rim.position.set(3, -1, -2)
       break
-      
+
     default:
       // Fallback to ambient lighting if preset is unknown
       setupLighting('ambient')
       return
   }
-  
+
   // Add all lights to the scene (only add if they exist)
-  if (lights.ambient) scene.add(lights.ambient)
-  if (lights.hemisphere) scene.add(lights.hemisphere)
-  if (lights.main) scene.add(lights.main)
-  if (lights.fill) scene.add(lights.fill)
-  if (lights.rim) scene.add(lights.rim)
+  if (lights.ambient)
+    scene.add(lights.ambient)
+  if (lights.hemisphere)
+    scene.add(lights.hemisphere)
+  if (lights.main)
+    scene.add(lights.main)
+  if (lights.fill)
+    scene.add(lights.fill)
+  if (lights.rim)
+    scene.add(lights.rim)
 }
 
 // Function to reset camera position and zoom
@@ -877,7 +913,7 @@ onBeforeUnmount(() => {
     if (texture)
       texture.dispose()
   })
-  
+
   // Dispose of environment map
   if (scene && scene.environment) {
     scene.environment.dispose()
