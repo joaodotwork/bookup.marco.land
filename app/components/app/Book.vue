@@ -354,8 +354,8 @@ async function initBookScene() {
     scene.environment = cubeRenderTarget.texture
 
     // Create camera
-    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
-    camera.position.set(0, 0, 4) // Position camera for a flat view of the cover
+    camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000) // Slightly narrower FOV
+    camera.position.set(0, 0, 5.5) // Position camera further back to fit book during animation
     camera.lookAt(0, 0, 0)
 
     // Set up initial lighting based on preset
@@ -671,7 +671,7 @@ function resetCameraView() {
     return
 
   // Reset camera position
-  camera.position.set(0, 0, 4)
+  camera.position.set(0, 0, 5.5)
   camera.lookAt(0, 0, 0)
 
   // Reset controls
