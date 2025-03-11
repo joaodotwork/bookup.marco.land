@@ -51,6 +51,6 @@ export default defineNuxtConfig({
   },
 
   build: {
-    transpile: ['three'],
+    transpile: ['three', 'three/examples/jsm/controls/OrbitControls'],
   },
 })

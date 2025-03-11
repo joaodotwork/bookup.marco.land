@@ -1,17 +1,11 @@
 <script setup lang="ts">
-// Use Nuxt's plugin system to get Three.js instances
-const { $THREE, $OrbitControls, $isThreeReady } = useNuxtApp()
+// Get Three.js from the plugin
+const { $THREE, $OrbitControls } = useNuxtApp()
 // Create aliases for consistency with existing code
 const THREE = $THREE
 const OrbitControls = $OrbitControls
-const isThreeReady = $isThreeReady
 
-// Log THREE.js availability status
-console.log('THREE.js available in component:', { 
-  hasThree: !!THREE, 
-  hasOrbitControls: !!OrbitControls,
-  isThreeReady
-})
+// No need for console logging in production code
 
 const { design, dimensions, animation, lighting } = storeToRefs(useBookStore())
 
@@ -29,14 +23,9 @@ let lights: {
   fill: THREE.DirectionalLight
   rim: THREE.DirectionalLight
 }
-// Create texture loader only when THREE is available
-const textureLoader = ref<any>(null)
-// Initialize texture loader once THREE is confirmed available
-if (THREE && THREE.TextureLoader) {
-  textureLoader.value = new THREE.TextureLoader()
-}
-
-const loadedTextures = ref<Record<string, any>>({})
+// Simple declaration of texture loader
+const textureLoader = new THREE.TextureLoader()
+const loadedTextures = ref<Record<string, THREE.Texture>>({})
 
 // Computed properties for book dimensions
 const width = computed(() => dimensions.value.width * (dimensions.value.scale + 1))
@@ -55,65 +44,34 @@ const textureUrls = [
 
 // Load all textures with color correction
 async function loadTextures() {
-  // Safety check
-  if (!textureLoader.value) {
-    console.error('TextureLoader not initialized')
-    
-    // Try to create a new one if THREE is available
-    if (THREE && THREE.TextureLoader) {
-      console.log('Creating new TextureLoader instance')
-      textureLoader.value = new THREE.TextureLoader()
-    } else {
-      throw new Error('Cannot create TextureLoader - THREE not available')
-    }
-  }
-  
   const promises = textureUrls.map(({ key, url }) => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        // Get the texture source - either from design or default
-        const designKey = key as keyof typeof design.value
-        const textureSource = design.value[designKey] || url
-        
-        if (!textureLoader.value) {
-          throw new Error('TextureLoader not available')
+    return new Promise<void>((resolve) => {
+      // Get the texture source - either from design or default
+      const designKey = key as keyof typeof design.value
+      const textureSource = design.value[designKey] || url
+
+      textureLoader.load(
+        textureSource,
+        (texture) => {
+          // Apply texture settings for better color reproduction
+          texture.encoding = THREE.sRGBEncoding // Use sRGB encoding for correct colors
+          texture.anisotropy = 16 // Improve texture sharpness
+          texture.generateMipmaps = true
+          texture.minFilter = THREE.LinearMipmapLinearFilter
+          texture.magFilter = THREE.LinearFilter
+          texture.wrapS = THREE.ClampToEdgeWrapping
+          texture.wrapT = THREE.ClampToEdgeWrapping
+
+          // Store the texture
+          loadedTextures.value[key] = texture
+          resolve()
+        },
+        undefined,
+        (error) => {
+          console.error(`Failed to load texture for ${key}:`, error)
+          resolve(), // Resolve anyway to not block other textures
         }
-
-        textureLoader.value.load(
-          textureSource,
-          (texture) => {
-            try {
-              // Apply texture settings for better color reproduction
-              if (THREE.sRGBEncoding) texture.encoding = THREE.sRGBEncoding // Use sRGB encoding for correct colors
-              texture.anisotropy = 16 // Improve texture sharpness
-              texture.generateMipmaps = true
-              if (THREE.LinearMipmapLinearFilter) texture.minFilter = THREE.LinearMipmapLinearFilter
-              if (THREE.LinearFilter) texture.magFilter = THREE.LinearFilter
-              if (THREE.ClampToEdgeWrapping) {
-                texture.wrapS = THREE.ClampToEdgeWrapping
-                texture.wrapT = THREE.ClampToEdgeWrapping
-              }
-
-              // Store the texture
-              loadedTextures.value[key] = texture
-              resolve()
-            } catch (settingsError) {
-              console.error(`Error applying texture settings for ${key}:`, settingsError)
-              // Still store the texture even if settings failed
-              loadedTextures.value[key] = texture
-              resolve()
-            }
-          },
-          undefined,
-          (error) => {
-            console.error(`Failed to load texture for ${key}:`, error)
-            resolve() // Resolve anyway to not block other textures
-          }
-        )
-      } catch (loadError) {
-        console.error(`Error in texture loading process for ${key}:`, loadError)
-        resolve() // Resolve anyway to not block other textures
-      }
+      )
     })
   })
 
@@ -123,120 +81,41 @@ async function loadTextures() {
 
 // Reload all textures when uploaded images change
 async function reloadAllTextures() {
-  // Safety check - similar to loadTextures
-  if (!textureLoader.value) {
-    console.error('TextureLoader not initialized during reload')
-    
-    // Try to create a new one if THREE is available
-    if (THREE && THREE.TextureLoader) {
-      console.log('Creating new TextureLoader instance for reload')
-      textureLoader.value = new THREE.TextureLoader()
-    } else {
-      throw new Error('Cannot create TextureLoader for reload - THREE not available')
-    }
-  }
-  
   // Force dispose existing textures to prevent memory leaks
   Object.values(loadedTextures.value).forEach((texture) => {
-    try {
-      if (texture && typeof texture.dispose === 'function')
-        texture.dispose()
-    } catch (disposeError) {
-      console.error('Error disposing texture:', disposeError)
+    if (texture) {
+      texture.dispose()
     }
   })
 
   // Clear loaded textures
   loadedTextures.value = {}
 
-  // Reload all textures from current design state
-  const promises = textureUrls.map(({ key, url }) => {
-    return new Promise<void>((resolve) => {
-      try {
-        // Get the texture source - either from design or default
-        const designKey = key as keyof typeof design.value
-        const textureSource = design.value[designKey] || url
-        
-        if (!textureLoader.value) {
-          throw new Error('TextureLoader not available during reload')
-        }
-
-        textureLoader.value.load(
-          textureSource,
-          (texture) => {
-            try {
-              // Apply texture settings for better color reproduction
-              if (THREE.sRGBEncoding) texture.encoding = THREE.sRGBEncoding
-              texture.anisotropy = 16
-              texture.generateMipmaps = true
-              if (THREE.LinearMipmapLinearFilter) texture.minFilter = THREE.LinearMipmapLinearFilter
-              if (THREE.LinearFilter) texture.magFilter = THREE.LinearFilter
-              if (THREE.ClampToEdgeWrapping) {
-                texture.wrapS = THREE.ClampToEdgeWrapping
-                texture.wrapT = THREE.ClampToEdgeWrapping
-              }
-
-              // Store the texture
-              loadedTextures.value[key] = texture
-              resolve()
-            } catch (settingsError) {
-              console.error(`Error applying texture settings for ${key} during reload:`, settingsError)
-              // Still store the texture even if settings failed
-              loadedTextures.value[key] = texture
-              resolve()
-            }
-          },
-          undefined,
-          (error) => {
-            console.error(`Failed to reload texture for ${key}:`, error)
-            resolve() // Resolve anyway to not block other textures
-          }
-        )
-      } catch (loadError) {
-        console.error(`Error in texture reloading process for ${key}:`, loadError)
-        resolve() // Resolve anyway to not block other textures
-      }
-    })
-  })
-
-  return Promise.all(promises)
+  // Reload all textures using the same function
+  await loadTextures()
 }
 
-// Initialize Three.js scene with robust error handling
+// Initialize Three.js scene
 function initThree() {
-  try {
-    // Basic DOM element checks
-    if (!canvasRef.value) {
-      throw new Error('Canvas reference not available')
-    }
-    
-    if (!rendererContainer.value) {
-      throw new Error('Renderer container not available')
-    }
-    
-    // Check THREE availability one more time
-    if (!THREE || !THREE.WebGLRenderer) {
-      throw new Error('THREE.WebGLRenderer not available')
-    }
-
-    // Setup renderer with try-catch for WebGL errors
-    try {
-      renderer = new THREE.WebGLRenderer({
-        canvas: canvasRef.value,
-        antialias: true,
-        alpha: true,
-        precision: 'highp',
-        powerPreference: 'high-performance',
-        stencil: false,
-      })
-    } catch (webglError) {
-      console.error('WebGL renderer creation failed:', webglError)
-      throw new Error('Failed to initialize WebGL renderer. Your browser may not support WebGL.')
-    }
-    
-    // Set renderer size and pixel ratio
-    renderer.setPixelRatio(window.devicePixelRatio || 1)
-    renderer.setSize(rendererContainer.value.clientWidth, rendererContainer.value.clientHeight)
+  // Basic DOM element checks
+  if (!canvasRef.value || !rendererContainer.value) {
+    console.error('DOM references not ready')
+    return
+  }
+  
+  // Setup renderer
+  renderer = new THREE.WebGLRenderer({
+    canvas: canvasRef.value,
+    antialias: true,
+    alpha: true,
+    precision: 'highp',
+    powerPreference: 'high-performance',
+    stencil: false,
+  })
+  
+  // Set renderer size and pixel ratio
+  renderer.setPixelRatio(window.devicePixelRatio || 1)
+  renderer.setSize(rendererContainer.value.clientWidth, rendererContainer.value.clientHeight)
 
   // Enable correct color output
   renderer.outputEncoding = THREE.sRGBEncoding
@@ -311,12 +190,6 @@ function initThree() {
 
   // Handle window resize
   window.addEventListener('resize', onWindowResize)
-  
-  } catch (initError) {
-    console.error('Error in initThree:', initError)
-    error.value = initError instanceof Error ? initError.message : 'Failed to initialize 3D scene'
-    throw initError // Re-throw to be caught by the onMounted handler
-  }
 }
 
 // Update the scene background color from design
@@ -672,38 +545,24 @@ const isLoading = ref(true)
 
 // Lifecycle hooks
 onMounted(async () => {
-  // Ensure we're in the browser environment
-  if (process.client) {
-    try {
-      // Only proceed if THREE is properly loaded
-      if (!isThreeReady) {
-        throw new Error('THREE.js modules not ready')
-      }
-      
-      // Additional validation
-      if (!THREE || !OrbitControls) {
-        throw new Error('THREE.js modules not properly loaded')
-      }
-      
-      isLoading.value = true
-      
-      // Delay initialization slightly to ensure DOM is fully ready
-      setTimeout(async () => {
-        try {
-          await loadTextures()
-          initThree()
-          isLoading.value = false
-        } catch (initError) {
-          console.error('Error during delayed initialization:', initError)
-          error.value = initError instanceof Error ? initError.message : 'Error initializing 3D view'
-          isLoading.value = false
-        }
-      }, 100)
-    } catch (e) {
-      console.error('Error initializing Three.js:', e)
-      error.value = e instanceof Error ? e.message : 'Unknown error initializing 3D view'
-      isLoading.value = false
-    }
+  // Simple check to ensure we have Three.js available
+  if (!THREE || !OrbitControls) {
+    console.error('THREE.js not available in Book component')
+    error.value = 'THREE.js modules not available'
+    return
+  }
+  
+  try {
+    isLoading.value = true
+    // Load textures first
+    await loadTextures()
+    // Then initialize Three.js scene
+    initThree()
+    isLoading.value = false
+  } catch (e) {
+    console.error('Error initializing Three.js:', e)
+    error.value = e instanceof Error ? e.message : 'Error initializing 3D view'
+    isLoading.value = false
   }
 })
 
