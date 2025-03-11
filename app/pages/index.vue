@@ -7,7 +7,9 @@ const { showSidebar } = storeToRefs(useAppStore())
     class="grid"
     :class="{ 'grid-cols-[1fr_300px]': showSidebar }"
   >
-    <Book />
+    <ClientOnly>
+      <Book />
+    </ClientOnly>
     <UButton
       v-if="!showSidebar"
       size="sm" icon="i-mdi-chevron-double-left" variant="soft" color="neutral" class="w-7 fixed z-9 top-2.5 right-3"

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+// Use Nuxt's plugin system to get Three.js instances
+const { $THREE, $OrbitControls } = useNuxtApp()
+// Create aliases for consistency with existing code
+const THREE = $THREE
 
 const { design, dimensions, animation, lighting } = storeToRefs(useBookStore())
 
@@ -193,7 +195,7 @@ function initThree() {
   camera.position.z = maxDimension * 2.5
 
   // Add orbit controls
-  controls = new OrbitControls(camera, renderer.domElement)
+  controls = new $OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.1
   controls.autoRotate = false
@@ -560,8 +562,11 @@ function updateLighting(preset: string) {
 
 // Lifecycle hooks
 onMounted(async () => {
-  await loadTextures()
-  initThree()
+  // Ensure we're in the browser environment
+  if (process.client) {
+    await loadTextures()
+    initThree()
+  }
 })
 
 onBeforeUnmount(() => {

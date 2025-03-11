@@ -46,7 +46,11 @@ export default defineNuxtConfig({
    */
   vite: {
     optimizeDeps: {
-      include: ['color'],
+      include: ['color', 'three'],
     },
+  },
+
+  build: {
+    transpile: ['three'],
   },
 })
