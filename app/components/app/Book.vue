@@ -3,6 +3,15 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
+// Simple debounce utility
+function debounce(fn, delay) {
+  let timeout
+  return function(...args) {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
+
 // Simple states - defined before use
 const error = ref(null)
 const isLoading = ref(true)
@@ -10,6 +19,27 @@ const canvasRef = ref(null)
 const rendererContainer = ref(null)
 
 const { design, dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
+const appStore = useAppStore()
+const { showSidebar } = storeToRefs(appStore)
+
+// Function to handle resize and recentering
+const handleResize = debounce(() => {
+  if (!renderer || !camera || !rendererContainer.value) return
+  
+  // Get new dimensions
+  const width = rendererContainer.value.clientWidth
+  const height = rendererContainer.value.clientHeight
+  
+  // Update camera aspect ratio
+  camera.aspect = width / height
+  camera.updateProjectionMatrix()
+  
+  // Update renderer size
+  renderer.setSize(width, height)
+  
+  // Re-render the scene
+  if (scene) renderer.render(scene, camera)
+}, 300)
 
 let renderer = null
 let scene = null
@@ -447,19 +477,8 @@ async function initBookScene() {
     // Start animation
     animate()
 
-    // Handle resize
-    window.addEventListener('resize', () => {
-      if (!rendererContainer.value || !camera || !renderer)
-        return
-
-      const width = rendererContainer.value.clientWidth
-      const height = rendererContainer.value.clientHeight
-
-      camera.aspect = width / height
-      camera.updateProjectionMatrix()
-
-      renderer.setSize(width, height)
-    })
+    // Handle resize with our debounced function
+    window.addEventListener('resize', handleResize)
 
     isLoading.value = false
   }
@@ -865,7 +884,14 @@ onBeforeUnmount(() => {
     scene.environment = null
   }
 
-  window.removeEventListener('resize', () => {})
+  window.removeEventListener('resize', handleResize)
+})
+
+// Watch for sidebar visibility changes to update layout
+watch(() => showSidebar.value, () => {
+  // Call the resize handler with a delay
+  // This allows time for DOM updates to complete
+  setTimeout(handleResize, 100)
 })
 </script>
 

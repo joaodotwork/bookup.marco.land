@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { showSidebar } = storeToRefs(useAppStore())
+const appStore = useAppStore()
 const { dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
 
 const showLicense = ref(false)
@@ -70,11 +70,11 @@ function resetRotation() {
     <BSection>
       <UButton
         size="sm"
-        :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'"
+        icon="i-mdi-chevron-double-right"
         variant="soft"
         color="neutral"
         class="w-7"
-        @click="showSidebar = !showSidebar"
+        @click="appStore.hideSidebarPanel()"
       />
     </BSection>
     <USeparator />

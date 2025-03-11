@@ -1,11 +1,14 @@
 <script setup lang="ts">
-const { showSidebar } = storeToRefs(useAppStore())
+const appStore = useAppStore()
+const { showSidebar } = storeToRefs(appStore)
 </script>
 
 <template>
   <div
-    class="grid"
-    :class="{ 'grid-cols-[1fr_300px]': showSidebar }"
+    class="grid transition-[grid-template-columns] duration-300 ease-in-out"
+    :style="{ 
+      gridTemplateColumns: showSidebar ? '1fr 300px' : '1fr' 
+    }"
   >
     <ClientOnly>
       <Book />
@@ -18,11 +21,25 @@ const { showSidebar } = storeToRefs(useAppStore())
         </div>
       </template>
     </ClientOnly>
-    <UButton
-      v-if="!showSidebar"
-      size="sm" icon="i-mdi-chevron-double-left" variant="soft" color="neutral" class="w-7 fixed z-9 top-2.5 right-3"
-      @click="showSidebar = true"
-    />
-    <Sidebar v-else />
+    <!-- Only show this button when sidebar is hidden -->
+    <div 
+      v-if="!showSidebar" 
+      class="fixed z-10 top-4 right-4 transition-opacity duration-300"
+    >
+      <UButton
+        size="sm" 
+        icon="i-mdi-chevron-double-left" 
+        variant="soft" 
+        color="neutral" 
+        class="w-7 opacity-80 hover:opacity-100"
+        @click="appStore.showSidebarPanel()"
+      />
+    </div>
+    
+    <!-- The v-if is crucial here - we need to fully mount/unmount the component -->
+    <div v-if="showSidebar" class="contents">
+      <Sidebar />
+    </div>
   </div>
 </template>
+
