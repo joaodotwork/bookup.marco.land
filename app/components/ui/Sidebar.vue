@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { showSidebar } = storeToRefs(useAppStore())
-const { dimensions, rotation, animation, lighting } = storeToRefs(useBookStore())
+const { dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
 
 const showLicense = ref(false)
 const showInfo = ref(false)
@@ -25,6 +25,12 @@ const lightingPresets = ref([
   { label: 'Ambient', value: 'ambient', icon: 'i-mdi-white-balance-sunny', description: 'Even, all-around illumination' },
   { label: 'Studio', value: 'studio', icon: 'i-mdi-camera', description: 'Balanced three-point lighting' },
   { label: 'Soft', value: 'soft', icon: 'i-mdi-lightbulb-outline', description: 'Gentle, diffused illumination' },
+])
+
+const surfaceTypes = ref([
+  { label: 'Glossy', value: 'glossy', icon: 'i-mdi-shimmer', description: 'Reflective, polished finish' },
+  { label: 'Matte', value: 'matte', icon: 'i-mdi-spray', description: 'Non-reflective, smooth finish' },
+  { label: 'Uncoated', value: 'uncoated', icon: 'i-mdi-texture-box', description: 'Natural paper texture' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1
@@ -130,6 +136,23 @@ function resetRotation() {
             @click="lighting.preset = preset.value"
           >
             {{ preset.label }}
+          </UButton>
+        </UTooltip>
+      </div>
+    </BSection>
+    <USeparator />
+    <BSection label="Surface">
+      <div class="grid grid-cols-3 gap-2 col-span-2">
+        <UTooltip v-for="type in surfaceTypes" :key="type.value" :text="type.description">
+          <UButton
+            :icon="type.icon"
+            size="sm"
+            :color="surface.type === type.value ? 'primary' : 'gray'"
+            variant="soft"
+            class="w-full"
+            @click="surface.type = type.value"
+          >
+            {{ type.label }}
           </UButton>
         </UTooltip>
       </div>

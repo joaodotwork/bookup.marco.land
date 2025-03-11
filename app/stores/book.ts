@@ -28,6 +28,9 @@ export const useBookStore = defineStore('@bookup/book', {
     lighting: {
       preset: 'ambient',
     },
+    surface: {
+      type: 'glossy', // Options: 'glossy', 'matte', 'uncoated'
+    },
   }),
   persist: true,
 })

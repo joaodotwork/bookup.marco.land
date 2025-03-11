@@ -9,7 +9,7 @@ const isLoading = ref(true)
 const canvasRef = ref(null)
 const rendererContainer = ref(null)
 
-const { design, dimensions, rotation, animation, lighting } = storeToRefs(useBookStore())
+const { design, dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
 
 let renderer = null
 let scene = null
@@ -268,11 +268,69 @@ function createBook() {
   )
 
   // Create materials using loaded textures - with spine texture on the left side
-  // Using shared material properties for consistent appearance
-  const materialProps = {
-    roughness: 0.5,       // Paper-like surface roughness
-    metalness: 0.0,       // Non-metallic material
-    envMapIntensity: 1.0, // How much environment lighting affects the material
+  // Material properties vary based on selected surface type
+  let materialProps;
+  
+  // Configure material properties based on selected surface type
+  switch(surface.value.type) {
+    case 'glossy':
+      materialProps = {
+        roughness: 0.2,       // Lower roughness for glossy, reflective finish
+        metalness: 0.1,       // Slight metallic look for glossy finish
+        envMapIntensity: 1.5, // Stronger reflections
+        flatShading: false,   // Smooth surface
+      };
+      break;
+      
+    case 'matte':
+      materialProps = {
+        roughness: 0.7,       // Higher roughness for matte, non-reflective finish
+        metalness: 0.0,       // No metallic look
+        envMapIntensity: 0.5, // Minimal reflections
+        flatShading: false,   // Smooth surface
+      };
+      break;
+      
+    case 'uncoated':
+      materialProps = {
+        roughness: 0.9,       // Very high roughness for uncoated texture
+        metalness: 0.0,       // No metallic look
+        envMapIntensity: 0.3, // Minimal reflections
+        flatShading: false,   // Even surface (we'll use normal map for texture)
+      };
+      
+      // Add a subtle paper texture for uncoated style
+      // We'll use a procedural bump map to simulate paper texture
+      const textureSize = 256;
+      const data = new Uint8Array(textureSize * textureSize * 4);
+      
+      // Create subtle random variations for paper texture
+      for (let i = 0; i < textureSize * textureSize * 4; i += 4) {
+        // Random value between 120-135 for subtle paper texture
+        const value = 127 + Math.floor(Math.random() * 16) - 8;
+        data[i] = data[i+1] = data[i+2] = value;
+        data[i+3] = 255; // Alpha
+      }
+      
+      // Create normal map from the grayscale texture
+      const paperTexture = new THREE.DataTexture(data, textureSize, textureSize, THREE.RGBAFormat);
+      paperTexture.wrapS = paperTexture.wrapT = THREE.RepeatWrapping;
+      paperTexture.repeat.set(4, 4); // Repeat the texture to make it less obvious
+      paperTexture.needsUpdate = true;
+      
+      // Add the paper texture to material properties
+      materialProps.normalMap = paperTexture;
+      materialProps.normalScale = new THREE.Vector2(0.05, 0.05); // Subtle effect
+      break;
+      
+    default:
+      // Default to glossy if type is unknown
+      materialProps = {
+        roughness: 0.2,
+        metalness: 0.1,
+        envMapIntensity: 1.5,
+        flatShading: false,
+      };
   }
   
   const materials = [
@@ -488,6 +546,26 @@ watch(() => design.value.background, (newColor) => {
 // Watch for lighting preset changes
 watch(() => lighting.value.preset, (newPreset) => {
   setupLighting(newPreset)
+})
+
+// Watch for surface type changes
+watch(() => surface.value.type, async (newSurfaceType) => {
+  if (!book || !scene)
+    return
+
+  try {
+    console.log(`Surface type changed to: ${newSurfaceType}`)
+    
+    // Remove the old book from the scene
+    scene.remove(book)
+
+    // Create a new book with updated surface material
+    book = createBook()
+    scene.add(book)
+  }
+  catch (e) {
+    console.error('Error updating book surface:', e)
+  }
 })
 
 // Watch for dimension changes
