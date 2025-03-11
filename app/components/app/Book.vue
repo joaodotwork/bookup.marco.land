@@ -180,6 +180,19 @@ function loadTexture(url) {
       url,
       (texture) => {
         console.log(`Successfully loaded texture: ${url}`)
+        
+        // Set the correct color space for the texture
+        // Most images are in sRGB color space
+        texture.colorSpace = THREE.SRGBColorSpace
+        
+        // Ensure texture wrapping and filtering are set correctly
+        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
+        texture.minFilter = THREE.LinearMipmapLinearFilter
+        texture.magFilter = THREE.LinearFilter
+        
+        // Generate mipmaps for better rendering at different distances
+        texture.generateMipmaps = true
+        
         resolve(texture)
       },
       (event) => {
@@ -254,13 +267,20 @@ function createBook() {
   )
 
   // Create materials using loaded textures - with spine texture on the left side
+  // Using shared material properties for consistent appearance
+  const materialProps = {
+    roughness: 0.5,       // Paper-like surface roughness
+    metalness: 0.0,       // Non-metallic material
+    envMapIntensity: 1.0, // How much environment lighting affects the material
+  }
+  
   const materials = [
-    new THREE.MeshStandardMaterial({ map: textures.side }), // right side
-    new THREE.MeshStandardMaterial({ map: textures.spine }), // left side (spine)
-    new THREE.MeshStandardMaterial({ map: textures.top }), // top
-    new THREE.MeshStandardMaterial({ map: textures.top }), // bottom
-    new THREE.MeshStandardMaterial({ map: textures.cover }), // front (cover)
-    new THREE.MeshStandardMaterial({ map: textures.back }), // back
+    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.side }), // right side
+    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.spine }), // left side (spine)
+    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.top }), // top
+    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.top }), // bottom
+    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.cover }), // front (cover)
+    new THREE.MeshStandardMaterial({ ...materialProps, map: textures.back }), // back
   ]
 
   // Create a single book mesh with all textures applied
@@ -304,10 +324,29 @@ async function initBookScene() {
     // Configure shadow properties (will be enabled/disabled per preset)
     renderer.shadowMap.enabled = false 
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    
+    // Set the correct output color space for proper color rendering
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    
+    // Enable tone mapping for more realistic rendering
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.0
 
     // Create scene
     scene = new THREE.Scene()
     scene.background = new THREE.Color(design.value.background || '#0072FF')
+    
+    // Add a subtle environment map for more realistic reflections
+    const pmremGenerator = new THREE.PMREMGenerator(renderer)
+    pmremGenerator.compileEquirectangularShader()
+    
+    // Create a simple environment map using the scene background color
+    const envColor = new THREE.Color(design.value.background || '#0072FF')
+    const cubeRenderTarget = pmremGenerator.fromScene(
+      new THREE.Scene().add(new THREE.HemisphereLight(envColor.getHex(), 0x000000, 1)),
+      0.04
+    )
+    scene.environment = cubeRenderTarget.texture
 
     // Create camera
     camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000)
@@ -386,6 +425,8 @@ watch(() => [design.value.cover, design.value.back, design.value.spine], async (
       if (Array.isArray(materials)) {
         // Update spine (left side - index 1)
         if (updatedTextures.spine) {
+          // Ensure texture has correct settings
+          updatedTextures.spine.colorSpace = THREE.SRGBColorSpace
           materials[1].map = updatedTextures.spine
           materials[1].needsUpdate = true
           textures.spine = updatedTextures.spine
@@ -393,6 +434,8 @@ watch(() => [design.value.cover, design.value.back, design.value.spine], async (
 
         // Update cover (front - index 4)
         if (updatedTextures.cover) {
+          // Ensure texture has correct settings
+          updatedTextures.cover.colorSpace = THREE.SRGBColorSpace
           materials[4].map = updatedTextures.cover
           materials[4].needsUpdate = true
           textures.cover = updatedTextures.cover
@@ -400,6 +443,8 @@ watch(() => [design.value.cover, design.value.back, design.value.spine], async (
 
         // Update back (back - index 5)
         if (updatedTextures.back) {
+          // Ensure texture has correct settings
+          updatedTextures.back.colorSpace = THREE.SRGBColorSpace
           materials[5].map = updatedTextures.back
           materials[5].needsUpdate = true
           textures.back = updatedTextures.back
@@ -414,9 +459,25 @@ watch(() => [design.value.cover, design.value.back, design.value.spine], async (
 
 // Watch for background color changes
 watch(() => design.value.background, (newColor) => {
-  if (scene) {
-    scene.background = new THREE.Color(newColor || '#0072FF')
-  }
+  if (!scene || !renderer) return
+  
+  // Update scene background color
+  const color = new THREE.Color(newColor || '#0072FF')
+  scene.background = color
+  
+  // Update environment map to match the new background color
+  const pmremGenerator = new THREE.PMREMGenerator(renderer)
+  pmremGenerator.compileEquirectangularShader()
+  
+  const envScene = new THREE.Scene()
+  envScene.add(new THREE.HemisphereLight(color.getHex(), 0x000000, 1))
+  const cubeRenderTarget = pmremGenerator.fromScene(envScene, 0.04)
+  
+  // Update scene environment
+  scene.environment = cubeRenderTarget.texture
+  
+  // Dispose of the old render target to prevent memory leaks
+  pmremGenerator.dispose()
 })
 
 // Watch for lighting preset changes
@@ -715,6 +776,12 @@ onBeforeUnmount(() => {
     if (texture)
       texture.dispose()
   })
+  
+  // Dispose of environment map
+  if (scene && scene.environment) {
+    scene.environment.dispose()
+    scene.environment = null
+  }
 
   window.removeEventListener('resize', () => {})
 })
