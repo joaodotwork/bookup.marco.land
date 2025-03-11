@@ -29,8 +29,8 @@ function toggleSidebar() {
       </ClientOnly>
     </div>
 
-    <!-- Sidebar toggle button - positioned at the right edge, consistent placement -->
-    <div class="fixed z-20 top-4 right-[308px] transition-all duration-300" :style="{ right: showSidebar ? '308px' : '4px' }">
+    <!-- Sidebar toggle button - vertically centered at the right edge -->
+    <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300" :style="{ right: showSidebar ? '308px' : '4px' }">
       <UButton
         size="sm"
         :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'"
