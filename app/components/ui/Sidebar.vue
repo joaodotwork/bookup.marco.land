@@ -22,9 +22,9 @@ const axes = ref([
 ])
 
 const lightingPresets = ref([
-  { label: 'Studio', value: 'studio', icon: 'i-mdi-camera' },
-  { label: 'Soft', value: 'soft', icon: 'i-mdi-lightbulb-outline' },
-  { label: 'Display', value: 'display', icon: 'i-mdi-spotlight' },
+  { label: 'Studio', value: 'studio', icon: 'i-mdi-camera', description: 'Balanced three-point lighting' },
+  { label: 'Soft', value: 'soft', icon: 'i-mdi-lightbulb-outline', description: 'Gentle, diffused illumination' },
+  { label: 'Display', value: 'display', icon: 'i-mdi-spotlight', description: 'Dramatic showroom lighting' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1
@@ -120,18 +120,18 @@ function resetRotation() {
     <USeparator />
     <BSection label="Lighting">
       <div class="grid grid-cols-3 gap-2 col-span-2">
-        <UButton
-          v-for="preset in lightingPresets"
-          :key="preset.value"
-          :icon="preset.icon"
-          size="sm"
-          :color="lighting.preset === preset.value ? 'primary' : 'gray'"
-          variant="soft"
-          class="w-full"
-          @click="lighting.preset = preset.value"
-        >
-          {{ preset.label }}
-        </UButton>
+        <UTooltip v-for="preset in lightingPresets" :key="preset.value" :text="preset.description">
+          <UButton
+            :icon="preset.icon"
+            size="sm"
+            :color="lighting.preset === preset.value ? 'primary' : 'gray'"
+            variant="soft"
+            class="w-full"
+            @click="lighting.preset = preset.value"
+          >
+            {{ preset.label }}
+          </UButton>
+        </UTooltip>
       </div>
     </BSection>
     <USeparator />

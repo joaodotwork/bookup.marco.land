@@ -9,7 +9,7 @@ const isLoading = ref(true)
 const canvasRef = ref(null)
 const rendererContainer = ref(null)
 
-const { design, dimensions, rotation, animation } = storeToRefs(useBookStore())
+const { design, dimensions, rotation, animation, lighting } = storeToRefs(useBookStore())
 
 let renderer = null
 let scene = null
@@ -23,6 +23,14 @@ const textures = {
   spine: null,
   side: null,
   top: null,
+}
+
+// Store light references so we can adjust them based on presets
+const lights = {
+  ambient: null,
+  main: null,
+  fill: null,
+  rim: null,
 }
 
 // Store animation offset to track continuous rotation
@@ -258,6 +266,10 @@ function createBook() {
   // Create a single book mesh with all textures applied
   const bookGeometry = new THREE.BoxGeometry(width, height, depth)
   const bookMesh = new THREE.Mesh(bookGeometry, materials)
+  
+  // Enable shadows for the book
+  bookMesh.receiveShadow = true
+  bookMesh.castShadow = true
 
   // Add book to the group
   bookGroup.add(bookMesh)
@@ -288,6 +300,10 @@ async function initBookScene() {
     })
     renderer.setSize(width, height)
     renderer.setPixelRatio(window.devicePixelRatio)
+    
+    // Configure shadow properties (will be enabled/disabled per preset)
+    renderer.shadowMap.enabled = false 
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
     // Create scene
     scene = new THREE.Scene()
@@ -298,23 +314,8 @@ async function initBookScene() {
     camera.position.set(0, 0, 4) // Position camera for a flat view of the cover
     camera.lookAt(0, 0, 0)
 
-    // Add lights
-    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.7)
-    scene.add(ambientLight)
-
-    // Main light from directly in front for flat view
-    const directionalLight1 = new THREE.DirectionalLight(0xFFFFFF, 0.9)
-    directionalLight1.position.set(0, 0, 10)
-    scene.add(directionalLight1)
-
-    // Additional lights for when book is rotated
-    const directionalLight2 = new THREE.DirectionalLight(0xFFFFFF, 0.5)
-    directionalLight2.position.set(-5, 3, 2)
-    scene.add(directionalLight2)
-
-    const directionalLight3 = new THREE.DirectionalLight(0xFFFFFF, 0.4)
-    directionalLight3.position.set(5, -2, -3)
-    scene.add(directionalLight3)
+    // Set up initial lighting based on preset
+    setupLighting(lighting.value.preset)
 
     // Load textures
     await loadTextures()
@@ -416,6 +417,11 @@ watch(() => design.value.background, (newColor) => {
   if (scene) {
     scene.background = new THREE.Color(newColor || '#0072FF')
   }
+})
+
+// Watch for lighting preset changes
+watch(() => lighting.value.preset, (newPreset) => {
+  setupLighting(newPreset)
 })
 
 // Watch for dimension changes
@@ -520,6 +526,84 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
     animationProgress.z = 0
   }
 }, { deep: true })
+
+// Configure lighting based on selected preset
+function setupLighting(preset = 'studio') {
+  if (!scene || !renderer) return
+  
+  // Clear existing lights before adding new ones
+  if (lights.ambient) scene.remove(lights.ambient)
+  if (lights.main) scene.remove(lights.main)
+  if (lights.fill) scene.remove(lights.fill)
+  if (lights.rim) scene.remove(lights.rim)
+  
+  // Reset shadow settings
+  renderer.shadowMap.enabled = false
+  
+  // Create lighting setups based on preset
+  switch (preset) {
+    case 'studio':
+      // Studio lighting - balanced, professional setup with three-point lighting
+      lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.5)
+      lights.main = new THREE.DirectionalLight(0xFFFFFF, 1.0) // Key light
+      lights.main.position.set(0, 0, 10)
+      lights.fill = new THREE.DirectionalLight(0xFFFFFF, 0.6) // Fill light
+      lights.fill.position.set(-6, 3, 3)
+      lights.rim = new THREE.DirectionalLight(0xFFFFFF, 0.5) // Rim/back light
+      lights.rim.position.set(5, -2, -4)
+      break
+    
+    case 'soft':
+      // Soft lighting - diffused, gentle lighting with less contrast
+      lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.8)
+      lights.main = new THREE.DirectionalLight(0xFFFAF0, 0.7) // Soft warm main light
+      lights.main.position.set(2, 1, 8)
+      lights.fill = new THREE.DirectionalLight(0xF0F8FF, 0.4) // Soft cool fill light
+      lights.fill.position.set(-3, 2, 5)
+      // No harsh rim light for soft lighting
+      lights.rim = new THREE.DirectionalLight(0xF8F8FF, 0.2)
+      lights.rim.position.set(3, -1, -2)
+      break
+    
+    case 'display':
+      // Display lighting - dramatic, showroom-style with focused lights
+      
+      // Enable shadows for dramatic effect
+      renderer.shadowMap.enabled = true
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap
+      
+      lights.ambient = new THREE.AmbientLight(0x333333, 0.3) // Dark ambient
+      
+      // Main spotlight with shadows
+      lights.main = new THREE.SpotLight(0xFFFFFF, 1.5, 30, Math.PI/4, 0.3)
+      lights.main.position.set(0, 5, 10)
+      lights.main.castShadow = true
+      lights.main.shadow.mapSize.width = 1024
+      lights.main.shadow.mapSize.height = 1024
+      lights.main.shadow.camera.near = 1
+      lights.main.shadow.camera.far = 30
+      
+      // Cool fill light
+      lights.fill = new THREE.DirectionalLight(0xCCE0FF, 0.4)
+      lights.fill.position.set(-5, 3, 0)
+      
+      // Strong rim light
+      lights.rim = new THREE.DirectionalLight(0xFFD700, 0.5) // Slightly golden rim light
+      lights.rim.position.set(7, -3, -5)
+      break
+      
+    default:
+      // Fallback to studio lighting if preset is unknown
+      setupLighting('studio')
+      return
+  }
+  
+  // Add all lights to the scene
+  scene.add(lights.ambient)
+  scene.add(lights.main)
+  scene.add(lights.fill)
+  scene.add(lights.rim)
+}
 
 // Function to reset camera position and zoom
 function resetCameraView() {
