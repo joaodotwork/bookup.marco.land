@@ -275,10 +275,12 @@ function createBook() {
   switch(surface.value.type) {
     case 'glossy':
       materialProps = {
-        roughness: 0.2,       // Lower roughness for glossy, reflective finish
-        metalness: 0.1,       // Slight metallic look for glossy finish
-        envMapIntensity: 1.5, // Stronger reflections
+        roughness: 0.35,      // Increased roughness to reduce spot reflections
+        metalness: 0.05,      // Reduced metalness for more subtle sheen
+        envMapIntensity: 0.8, // Lower reflection intensity for more diffuse look
         flatShading: false,   // Smooth surface
+        clearcoat: 0.3,       // Slight clearcoat for laminated book look
+        clearcoatRoughness: 0.4, // Diffuse the clearcoat reflections
       };
       break;
       
@@ -324,11 +326,11 @@ function createBook() {
       break;
       
     default:
-      // Default to glossy if type is unknown
+      // Default to uncoated if type is unknown
       materialProps = {
-        roughness: 0.2,
-        metalness: 0.1,
-        envMapIntensity: 1.5,
+        roughness: 0.9,
+        metalness: 0.0,
+        envMapIntensity: 0.3,
         flatShading: false,
       };
   }
