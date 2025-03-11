@@ -442,48 +442,82 @@ watch(() => dimensions.value, async (_newDimensions) => {
 // Watch for animation setting changes
 watch(() => animation.value, (newAnimation, oldAnimation) => {
   // When animation is turned on, set the last time to now to avoid jumps
+  // and ensure animation starts from the current position
   if (newAnimation.enabled && !oldAnimation.enabled) {
     lastAnimationTime = Date.now()
-  }
-
-  // When animation is turned off, reset offsets but maintain position
-  if (!newAnimation.enabled && oldAnimation.enabled) {
-    // Reset accumulated offsets but don't change the current visual position
+    
+    // Reset animation offsets and progress counters
     animationOffset.x = 0
     animationOffset.y = 0
     animationOffset.z = 0
+    animationProgress.x = 0
+    animationProgress.y = 0
+    animationProgress.z = 0
+    
+    // Because we're resetting offsets, we need to update rotation values 
+    // to match the current visual position of the book
+    if (book) {
+      // Convert from radians to degrees and update the store
+      rotation.value.x = THREE.MathUtils.radToDeg(book.rotation.x)
+      rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
+      rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
+    }
+  }
+
+  // When animation is turned off, update rotation to match current visual position
+  if (!newAnimation.enabled && oldAnimation.enabled) {
+    // Update the rotation store values to match the current visual position
+    if (book) {
+      // Convert from radians to degrees and update the store
+      rotation.value.x = THREE.MathUtils.radToDeg(book.rotation.x)
+      rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
+      rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
+    }
+    
+    // Reset accumulated offsets since we've stored the position in rotation values
+    animationOffset.x = 0
+    animationOffset.y = 0
+    animationOffset.z = 0
+    
     // Reset progress values
     animationProgress.x = 0
     animationProgress.y = 0
     animationProgress.z = 0
   }
 
-  // When axis changes while animation is enabled, reset the old axis offset
+  // When axis changes while animation is enabled, update rotation and reset offsets
   if (newAnimation.enabled && oldAnimation.enabled && newAnimation.axis !== oldAnimation.axis) {
-    // Reset the old axis offset
-    if (oldAnimation.axis === 'X') {
-      animationOffset.x = 0
-      animationProgress.x = 0
+    // First capture the current visual rotation
+    if (book) {
+      // Convert from radians to degrees and update the store
+      rotation.value.x = THREE.MathUtils.radToDeg(book.rotation.x)
+      rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
+      rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
     }
-    if (oldAnimation.axis === 'Y') {
-      animationOffset.y = 0
-      animationProgress.y = 0
-    }
-    if (oldAnimation.axis === 'Z') {
-      animationOffset.z = 0
-      animationProgress.z = 0
-    }
+    
+    // Reset all offsets and progress values
+    animationOffset.x = 0
+    animationOffset.y = 0
+    animationOffset.z = 0
+    animationProgress.x = 0
+    animationProgress.y = 0
+    animationProgress.z = 0
   }
 
-  // When timing changes, reset progress but maintain position
+  // When timing changes, update rotation and reset progress
   if (newAnimation.enabled && oldAnimation.enabled && newAnimation.timing !== oldAnimation.timing) {
-    const axis = newAnimation.axis || 'Y'
-    if (axis === 'X')
-      animationProgress.x = 0
-    if (axis === 'Y')
-      animationProgress.y = 0
-    if (axis === 'Z')
-      animationProgress.z = 0
+    // First capture the current visual rotation
+    if (book) {
+      // Convert from radians to degrees and update the store
+      rotation.value.x = THREE.MathUtils.radToDeg(book.rotation.x)
+      rotation.value.y = THREE.MathUtils.radToDeg(book.rotation.y)
+      rotation.value.z = THREE.MathUtils.radToDeg(book.rotation.z)
+    }
+    
+    // Reset all progress values
+    animationProgress.x = 0
+    animationProgress.y = 0
+    animationProgress.z = 0
   }
 }, { deep: true })
 
