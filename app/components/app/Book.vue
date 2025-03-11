@@ -1,23 +1,7 @@
 <script setup lang="ts">
-// Import Three.js from the Nuxt plugin if available, otherwise use direct imports
-// This provides better compatibility with Vercel's serverless environment
-let THREE
-let OrbitControls
-
-// Check if running in browser environment
-if (process.client) {
-  // Try to use the plugin
-  const nuxtApp = useNuxtApp()
-  if (nuxtApp.$THREE && nuxtApp.$OrbitControls) {
-    THREE = nuxtApp.$THREE
-    OrbitControls = nuxtApp.$OrbitControls
-  } else {
-    // Fallback to direct imports (for backward compatibility)
-    THREE = await import('three')
-    const OrbitControlsModule = await import('three/examples/jsm/controls/OrbitControls')
-    OrbitControls = OrbitControlsModule.OrbitControls
-  }
-}
+// Import Three.js directly - we'll ensure it only runs on client side
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 // Simple states - defined before use
 const error = ref(null)
@@ -103,12 +87,29 @@ function animate() {
 // Load texture with error handling
 function loadTexture(url) {
   return new Promise((resolve, reject) => {
+    console.log(`Starting texture load: ${url}`)
+    
+    // Make sure THREE is defined
+    if (!THREE || !THREE.TextureLoader) {
+      console.error('THREE.js is not properly initialized')
+      return reject(new Error('THREE.js not initialized'))
+    }
+    
     const loader = new THREE.TextureLoader()
+    
     loader.load(
       url,
-      texture => resolve(texture),
-      undefined,
-      _err => reject(new Error(`Failed to load texture: ${url}`)),
+      texture => {
+        console.log(`Successfully loaded texture: ${url}`)
+        resolve(texture)
+      },
+      event => {
+        console.log(`Loading texture progress: ${url} - ${event ? Math.round(event.loaded / event.total * 100) : 'unknown'}%`)
+      },
+      err => {
+        console.error(`Failed to load texture: ${url}`, err)
+        reject(new Error(`Failed to load texture: ${url}`))
+      }
     )
   })
 }
@@ -116,23 +117,38 @@ function loadTexture(url) {
 // Load all required textures
 async function loadTextures() {
   try {
+    console.log('Starting texture loading...')
+    
+    console.log('Loading cover texture...')
     textures.cover = await loadTexture('/images/book-cover.jpg')
+    
+    console.log('Loading back texture...')
     textures.back = await loadTexture('/images/book-back.jpg')
+    
+    console.log('Loading spine texture...')
     textures.spine = await loadTexture('/images/book-spine.jpg')
+    
+    console.log('Loading side texture...')
     textures.side = await loadTexture('/images/book-side.jpg')
+    
+    console.log('Loading top texture...')
     textures.top = await loadTexture('/images/book-top.jpg')
 
     // Override with user-provided textures if available
     if (design.value.cover) {
+      console.log('Loading custom cover texture...')
       textures.cover = await loadTexture(design.value.cover)
     }
     if (design.value.back) {
+      console.log('Loading custom back texture...')
       textures.back = await loadTexture(design.value.back)
     }
     if (design.value.spine) {
+      console.log('Loading custom spine texture...')
       textures.spine = await loadTexture(design.value.spine)
     }
 
+    console.log('All textures loaded successfully')
     return true
   }
   catch (error) {
@@ -440,7 +456,9 @@ watch(() => rotation.value, (newRotation) => {
 onMounted(async () => {
   try {
     // Initialize Three.js with book geometry
+    console.log('Initializing Three.js scene...')
     await initBookScene()
+    console.log('Three.js scene initialized successfully')
   }
   catch (e) {
     console.error('Error initializing Three.js:', e)
@@ -488,13 +506,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- Wrap the entire component in client-only to ensure it only renders in the browser -->
-  <client-only>
-    <div
-      id="book"
-      ref="rendererContainer"
-      :style="{ backgroundColor: design.background }"
-    >
+  <div
+    id="book"
+    ref="rendererContainer"
+    :style="{ backgroundColor: design.background }"
+  >
     <!-- Error message -->
     <div v-if="error" class="error-container">
       <div class="error-message">
@@ -512,7 +528,6 @@ onBeforeUnmount(() => {
     <!-- Three.js canvas -->
     <canvas ref="canvasRef" />
   </div>
-  </client-only>
 </template>
 
 <style>
