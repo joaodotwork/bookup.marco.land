@@ -69,7 +69,7 @@ async function loadTextures() {
         undefined,
         (error) => {
           console.error(`Failed to load texture for ${key}:`, error)
-          resolve(), // Resolve anyway to not block other textures
+          resolve() // Resolve anyway to not block other textures
         }
       )
     })
