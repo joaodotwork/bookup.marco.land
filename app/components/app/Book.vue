@@ -24,10 +24,24 @@ const textures = {
   top: null,
 }
 
+// Store animation offset to track continuous rotation
+const animationOffset = {
+  x: 0,
+  y: 0,
+  z: 0,
+}
+
+// Last timestamp for smooth animation
+let lastAnimationTime = Date.now()
+
 // Animation function
 function animate() {
   if (!renderer || !scene || !camera || !book)
     return
+
+  const currentTime = Date.now()
+  const deltaTime = (currentTime - lastAnimationTime) / 1000 // seconds
+  lastAnimationTime = currentTime
 
   // Apply manual rotation values (these will be the base rotation)
   book.rotation.x = THREE.MathUtils.degToRad(rotation.value.x)
@@ -38,29 +52,28 @@ function animate() {
   if (book && animation.value.enabled) {
     // We directly use animation.value.speed in the calculations below
     const axis = animation.value.axis || 'Y'
+    const speed = animation.value.speed / 10 // degrees per second
 
-    // Store the current manual rotation
-    const currentRotation = {
-      x: rotation.value.x,
-      y: rotation.value.y,
-      z: rotation.value.z,
-    }
-
-    // Apply the animation rotation to the appropriate axis
+    // Update the continuous animation offset based on speed
     if (axis === 'Y') {
-      // Get current animated rotation in degrees (speed increments every frame)
-      const animatedDegrees = (Date.now() / 10) * (animation.value.speed / 10) % 360
-      // Set the final rotation (manual rotation + animation)
-      book.rotation.y = THREE.MathUtils.degToRad(currentRotation.y + animatedDegrees)
+      animationOffset.y += speed * deltaTime
     }
     else if (axis === 'X') {
-      const animatedDegrees = (Date.now() / 10) * (animation.value.speed / 10) % 360
-      book.rotation.x = THREE.MathUtils.degToRad(currentRotation.x + animatedDegrees)
+      animationOffset.x += speed * deltaTime
     }
     else if (axis === 'Z') {
-      const animatedDegrees = (Date.now() / 10) * (animation.value.speed / 10) % 360
-      book.rotation.z = THREE.MathUtils.degToRad(currentRotation.z + animatedDegrees)
+      animationOffset.z += speed * deltaTime
     }
+
+    // Apply the animation offsets to the book rotation
+    book.rotation.x += THREE.MathUtils.degToRad(animationOffset.x)
+    book.rotation.y += THREE.MathUtils.degToRad(animationOffset.y)
+    book.rotation.z += THREE.MathUtils.degToRad(animationOffset.z)
+
+    // Reset the offsets after applying them
+    animationOffset.x = axis === 'X' ? animationOffset.x % 360 : 0
+    animationOffset.y = axis === 'Y' ? animationOffset.y % 360 : 0
+    animationOffset.z = axis === 'Z' ? animationOffset.z % 360 : 0
   }
 
   // Render the scene
@@ -323,10 +336,30 @@ watch(() => dimensions.value, async (_newDimensions) => {
 }, { deep: true })
 
 // Watch for animation setting changes
-watch(() => animation.value, (_newAnimation) => {
-  // The animation function already uses the latest values from animation.value,
-  // so we don't need to do anything specific here.
-  // No action needed as the animate function uses reactive animation values
+watch(() => animation.value, (newAnimation, oldAnimation) => {
+  // When animation is turned on, set the last time to now to avoid jumps
+  if (newAnimation.enabled && !oldAnimation.enabled) {
+    lastAnimationTime = Date.now()
+  }
+
+  // When animation is turned off, reset offsets but maintain position
+  if (!newAnimation.enabled && oldAnimation.enabled) {
+    // Reset accumulated offsets but don't change the current visual position
+    animationOffset.x = 0
+    animationOffset.y = 0
+    animationOffset.z = 0
+  }
+
+  // When axis changes while animation is enabled, reset the old axis offset
+  if (newAnimation.enabled && oldAnimation.enabled && newAnimation.axis !== oldAnimation.axis) {
+    // Reset the old axis offset
+    if (oldAnimation.axis === 'X')
+      animationOffset.x = 0
+    if (oldAnimation.axis === 'Y')
+      animationOffset.y = 0
+    if (oldAnimation.axis === 'Z')
+      animationOffset.z = 0
+  }
 }, { deep: true })
 
 // Function to reset camera position and zoom
@@ -356,10 +389,18 @@ function resetCameraView() {
 window.resetBookCamera = () => {
   resetCameraView()
 
-  // Also reset the rotation values in the store
+  // Reset the rotation values in the store
   rotation.value.x = 0
   rotation.value.y = 0
   rotation.value.z = 0
+
+  // Reset animation offsets to avoid jumps
+  animationOffset.x = 0
+  animationOffset.y = 0
+  animationOffset.z = 0
+
+  // Reset animation timer
+  lastAnimationTime = Date.now()
 }
 
 // Watch for rotation changes and apply them to the book model
