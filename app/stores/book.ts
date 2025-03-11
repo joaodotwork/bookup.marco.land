@@ -21,7 +21,7 @@ export const useBookStore = defineStore('@bookup/book', {
     },
     animation: {
       enabled: true,
-      speed: 10,
+      speed: 10, // Higher values = slower animation: 1 = very fast (600 deg/sec), 10 = normal (60 deg/sec), 100 = very slow (6 deg/sec)
       timing: 'linear',
       axis: 'Y',
     },

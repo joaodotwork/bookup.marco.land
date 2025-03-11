@@ -51,9 +51,13 @@ function animate() {
 
   // Apply additional rotation if animation is enabled
   if (book && animation.value.enabled) {
-    // We directly use animation.value.speed in the calculations below
+    // Use animation.value.speed as the base rate
     const axis = animation.value.axis || 'Y'
-    const speed = animation.value.speed / 10 // degrees per second
+    // Ensure speed value is at least 1 to avoid division by zero
+    const speedValue = Math.max(1, animation.value.speed)
+    // Calibrate speed: 10 = normal (60 deg/sec), 1 = fast (600 deg/sec), 100 = slow (6 deg/sec)
+    const baseSpeed = 600 // degrees per second when speed is 1
+    const speed = baseSpeed / speedValue // inverse relationship: higher number = slower speed
 
     // Update the continuous animation offset based on speed
     if (axis === 'Y') {
@@ -88,28 +92,28 @@ function animate() {
 function loadTexture(url) {
   return new Promise((resolve, reject) => {
     console.log(`Starting texture load: ${url}`)
-    
+
     // Make sure THREE is defined
     if (!THREE || !THREE.TextureLoader) {
       console.error('THREE.js is not properly initialized')
       return reject(new Error('THREE.js not initialized'))
     }
-    
+
     const loader = new THREE.TextureLoader()
-    
+
     loader.load(
       url,
-      texture => {
+      (texture) => {
         console.log(`Successfully loaded texture: ${url}`)
         resolve(texture)
       },
-      event => {
+      (event) => {
         console.log(`Loading texture progress: ${url} - ${event ? Math.round(event.loaded / event.total * 100) : 'unknown'}%`)
       },
-      err => {
+      (err) => {
         console.error(`Failed to load texture: ${url}`, err)
         reject(new Error(`Failed to load texture: ${url}`))
-      }
+      },
     )
   })
 }
@@ -118,19 +122,19 @@ function loadTexture(url) {
 async function loadTextures() {
   try {
     console.log('Starting texture loading...')
-    
+
     console.log('Loading cover texture...')
     textures.cover = await loadTexture('/images/book-cover.jpg')
-    
+
     console.log('Loading back texture...')
     textures.back = await loadTexture('/images/book-back.jpg')
-    
+
     console.log('Loading spine texture...')
     textures.spine = await loadTexture('/images/book-spine.jpg')
-    
+
     console.log('Loading side texture...')
     textures.side = await loadTexture('/images/book-side.jpg')
-    
+
     console.log('Loading top texture...')
     textures.top = await loadTexture('/images/book-top.jpg')
 
