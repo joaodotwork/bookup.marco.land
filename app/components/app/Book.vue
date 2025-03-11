@@ -615,12 +615,15 @@ function setupLighting(preset = 'ambient') {
   switch (preset) {
     case 'ambient':
       // Ambient lighting - even illumination from all directions
-      // Use only a hemisphere light for truly ambient lighting
+      // Use hemisphere light for natural sky/ground illumination
       lights.hemisphere = new THREE.HemisphereLight(
         0xFFFFFF, // Sky color
         0xFFFAF0, // Ground color (slightly warm)
-        1.0       // Intensity
+        2.5       // Increased intensity (2.5) for much brighter appearance
       )
+      
+      // Add a subtle ambient light to ensure even illumination from all directions
+      lights.ambient = new THREE.AmbientLight(0xFFFFFF, 0.4)
       
       // No directional lights for this preset
       lights.main = null
