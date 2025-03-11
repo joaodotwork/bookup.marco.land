@@ -3,6 +3,7 @@
 const { $THREE, $OrbitControls } = useNuxtApp()
 // Create aliases for consistency with existing code
 const THREE = $THREE
+const OrbitControls = $OrbitControls
 
 const { design, dimensions, animation, lighting } = storeToRefs(useBookStore())
 
@@ -20,8 +21,14 @@ let lights: {
   fill: THREE.DirectionalLight
   rim: THREE.DirectionalLight
 }
-const textureLoader = new THREE.TextureLoader()
-const loadedTextures = ref<Record<string, THREE.Texture>>({})
+// Create texture loader only when THREE is available
+const textureLoader = ref<any>(null)
+// Initialize texture loader once THREE is confirmed available
+if (THREE && THREE.TextureLoader) {
+  textureLoader.value = new THREE.TextureLoader()
+}
+
+const loadedTextures = ref<Record<string, any>>({})
 
 // Computed properties for book dimensions
 const width = computed(() => dimensions.value.width * (dimensions.value.scale + 1))
@@ -40,23 +47,31 @@ const textureUrls = [
 
 // Load all textures with color correction
 async function loadTextures() {
+  // Safety check
+  if (!textureLoader.value) {
+    console.error('TextureLoader not initialized')
+    return
+  }
+  
   const promises = textureUrls.map(({ key, url }) => {
     return new Promise<void>((resolve) => {
       // Get the texture source - either from design or default
       const designKey = key as keyof typeof design.value
       const textureSource = design.value[designKey] || url
 
-      textureLoader.load(
+      textureLoader.value.load(
         textureSource,
         (texture) => {
           // Apply texture settings for better color reproduction
-          texture.encoding = THREE.sRGBEncoding // Use sRGB encoding for correct colors
+          if (THREE.sRGBEncoding) texture.encoding = THREE.sRGBEncoding // Use sRGB encoding for correct colors
           texture.anisotropy = 16 // Improve texture sharpness
           texture.generateMipmaps = true
-          texture.minFilter = THREE.LinearMipmapLinearFilter
-          texture.magFilter = THREE.LinearFilter
-          texture.wrapS = THREE.ClampToEdgeWrapping
-          texture.wrapT = THREE.ClampToEdgeWrapping
+          if (THREE.LinearMipmapLinearFilter) texture.minFilter = THREE.LinearMipmapLinearFilter
+          if (THREE.LinearFilter) texture.magFilter = THREE.LinearFilter
+          if (THREE.ClampToEdgeWrapping) {
+            texture.wrapS = THREE.ClampToEdgeWrapping
+            texture.wrapT = THREE.ClampToEdgeWrapping
+          }
 
           // Store the texture
           loadedTextures.value[key] = texture
@@ -77,9 +92,15 @@ async function loadTextures() {
 
 // Reload all textures when uploaded images change
 async function reloadAllTextures() {
+  // Safety check
+  if (!textureLoader.value) {
+    console.error('TextureLoader not initialized')
+    return
+  }
+  
   // Force dispose existing textures to prevent memory leaks
   Object.values(loadedTextures.value).forEach((texture) => {
-    if (texture)
+    if (texture && typeof texture.dispose === 'function')
       texture.dispose()
   })
 
@@ -93,17 +114,19 @@ async function reloadAllTextures() {
       const designKey = key as keyof typeof design.value
       const textureSource = design.value[designKey] || url
 
-      textureLoader.load(
+      textureLoader.value.load(
         textureSource,
         (texture) => {
           // Apply texture settings for better color reproduction
-          texture.encoding = THREE.sRGBEncoding
+          if (THREE.sRGBEncoding) texture.encoding = THREE.sRGBEncoding
           texture.anisotropy = 16
           texture.generateMipmaps = true
-          texture.minFilter = THREE.LinearMipmapLinearFilter
-          texture.magFilter = THREE.LinearFilter
-          texture.wrapS = THREE.ClampToEdgeWrapping
-          texture.wrapT = THREE.ClampToEdgeWrapping
+          if (THREE.LinearMipmapLinearFilter) texture.minFilter = THREE.LinearMipmapLinearFilter
+          if (THREE.LinearFilter) texture.magFilter = THREE.LinearFilter
+          if (THREE.ClampToEdgeWrapping) {
+            texture.wrapS = THREE.ClampToEdgeWrapping
+            texture.wrapT = THREE.ClampToEdgeWrapping
+          }
 
           // Store the texture
           loadedTextures.value[key] = texture
@@ -195,7 +218,7 @@ function initThree() {
   camera.position.z = maxDimension * 2.5
 
   // Add orbit controls
-  controls = new $OrbitControls(camera, renderer.domElement)
+  controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.1
   controls.autoRotate = false
@@ -560,12 +583,29 @@ function updateLighting(preset: string) {
   }
 }
 
+// Error handling state
+const error = ref<string | null>(null)
+const isLoading = ref(true)
+
 // Lifecycle hooks
 onMounted(async () => {
   // Ensure we're in the browser environment
   if (process.client) {
-    await loadTextures()
-    initThree()
+    try {
+      // Only proceed if THREE is properly loaded
+      if (!THREE || !OrbitControls) {
+        throw new Error('THREE.js modules not properly loaded')
+      }
+      
+      isLoading.value = true
+      await loadTextures()
+      initThree()
+      isLoading.value = false
+    } catch (e) {
+      console.error('Error initializing Three.js:', e)
+      error.value = e instanceof Error ? e.message : 'Unknown error initializing 3D view'
+      isLoading.value = false
+    }
   }
 })
 
@@ -604,7 +644,21 @@ onBeforeUnmount(() => {
     ref="rendererContainer"
     :style="{ backgroundColor: design.background }"
   >
-    <div class="three-container" :data-loaded="loaded">
+    <!-- Error message overlay -->
+    <div v-if="error" class="error-container">
+      <div class="error-message">
+        <p>Error loading 3D view: {{ error }}</p>
+        <button @click="error = null">Dismiss</button>
+      </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div v-if="isLoading && !error" class="loading-container">
+      <div class="loading-spinner">Loading...</div>
+    </div>
+    
+    <!-- Three.js canvas -->
+    <div class="three-container" :data-loaded="loaded && !error">
       <canvas ref="canvasRef" />
     </div>
   </div>
@@ -614,6 +668,7 @@ onBeforeUnmount(() => {
 #book {
   width: 100%;
   height: 100vh;
+  position: relative;
 }
 
 .three-container {
@@ -631,5 +686,62 @@ canvas {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Error display styles */
+.error-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 10;
+}
+
+.error-message {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 80%;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.error-message p {
+  margin-bottom: 15px;
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+.error-message button {
+  padding: 8px 16px;
+  background-color: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Loading styles */
+.loading-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 5;
+}
+
+.loading-spinner {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
 }
 </style>

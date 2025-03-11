@@ -9,6 +9,14 @@ const { showSidebar } = storeToRefs(useAppStore())
   >
     <ClientOnly>
       <Book />
+      <template #fallback>
+        <div class="flex items-center justify-center h-screen bg-gray-100">
+          <div class="text-center p-6 max-w-sm mx-auto bg-white rounded-xl shadow-md">
+            <div class="text-xl font-medium text-black mb-2">Loading 3D View...</div>
+            <p class="text-gray-500">Please wait while we prepare the book visualization.</p>
+          </div>
+        </div>
+      </template>
     </ClientOnly>
     <UButton
       v-if="!showSidebar"
