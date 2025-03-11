@@ -236,7 +236,9 @@ function animate() {
     if (animation.value.enabled) {
       const axis = animation.value.axis || 'Y'
       const speedValue = Math.max(1, animation.value.speed)
-      const speed = 60 / speedValue // degrees per second, simplified calculation
+      // Base speed of 60 degrees per second for speed=1
+      // Lower speed values = faster rotation (e.g., 1 = 60 deg/sec, 10 = 6 deg/sec)
+      const speed = 60 / speedValue // degrees per second
 
       // Simple animation without complex easing
       if (axis === 'Y') {
