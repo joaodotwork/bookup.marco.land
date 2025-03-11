@@ -1,5 +1,5 @@
 {
-  "framework": "nuxt",
+  "framework": "nuxtjs",
   "regions": ["all"],
   "env": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
