@@ -1,0 +1,21 @@
+{
+  "builds": [
+    {
+      "src": "nuxt.config.ts",
+      "use": "@nuxtjs/vercel-builder",
+      "config": {
+        "serverFiles": ["server/**"]
+      }
+    }
+  ],
+  "buildCommand": "pnpm run build",
+  "devCommand": "pnpm run dev",
+  "installCommand": "pnpm install",
+  "framework": "nuxt",
+  "regions": ["all"],
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "NITRO_PRESET": "vercel",
+    "NUXT_VITE_RESOLVE_EXT_OVERRIDE": "true"
+  }
+}

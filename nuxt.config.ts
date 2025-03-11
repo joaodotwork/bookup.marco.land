@@ -50,10 +50,13 @@ export default defineNuxtConfig({
     },
     ssr: {
       noExternal: ['three', 'three/examples/jsm/controls/OrbitControls']
+    },
+    resolve: {
+      dedupe: ['three']
     }
   },
 
   build: {
-    transpile: ['three'],
+    transpile: ['three', 'three/examples/jsm/controls/OrbitControls'],
   },
 })
