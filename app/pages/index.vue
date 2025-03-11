@@ -3,6 +3,7 @@ const appStore = useAppStore()
 const bookStore = useBookStore()
 const { showSidebar } = storeToRefs(appStore)
 const { animation } = storeToRefs(bookStore)
+const isFullscreen = ref(false)
 
 // Toggle sidebar visibility
 function toggleSidebar() {
@@ -13,6 +14,47 @@ function toggleSidebar() {
 function toggleAnimation() {
   animation.value.enabled = !animation.value.enabled
 }
+
+// Toggle fullscreen mode
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      // Enter fullscreen
+      await document.documentElement.requestFullscreen()
+      isFullscreen.value = true
+    } else {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        await document.exitFullscreen()
+        isFullscreen.value = false
+      }
+    }
+  } catch (err) {
+    console.error('Error toggling fullscreen:', err)
+  }
+}
+
+// Add appropriate fullscreen meta tags for different browsers
+useHead({
+  meta: [
+    { name: 'apple-mobile-web-app-capable', content: 'yes' },
+    { name: 'mobile-web-app-capable', content: 'yes' }
+  ]
+})
+
+// Create a named handler for fullscreen change events
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
+// Update fullscreen state when changed from browser controls
+onMounted(() => {
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
+})
 </script>
 
 <template>
@@ -60,6 +102,18 @@ function toggleAnimation() {
           color="neutral"
           class="w-7 opacity-80 hover:opacity-100"
           @click="toggleAnimation"
+        />
+      </UTooltip>
+      
+      <!-- Fullscreen toggle button -->
+      <UTooltip :text="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'">
+        <UButton
+          size="sm"
+          :icon="isFullscreen ? 'i-mdi-fullscreen-exit' : 'i-mdi-fullscreen'"
+          variant="soft"
+          color="neutral"
+          class="w-7 opacity-80 hover:opacity-100"
+          @click="toggleFullscreen"
         />
       </UTooltip>
     </div>
