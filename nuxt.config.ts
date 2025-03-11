@@ -46,11 +46,14 @@ export default defineNuxtConfig({
    */
   vite: {
     optimizeDeps: {
-      include: ['color', 'three'],
+      include: ['color', 'three', 'three/examples/jsm/controls/OrbitControls']
     },
+    ssr: {
+      noExternal: ['three', 'three/examples/jsm/controls/OrbitControls']
+    }
   },
 
   build: {
-    transpile: ['three', 'three/examples/jsm/controls/OrbitControls'],
+    transpile: ['three'],
   },
 })
