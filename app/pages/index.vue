@@ -1,12 +1,17 @@
 <script setup lang="ts">
 const appStore = useAppStore()
 const { showSidebar } = storeToRefs(appStore)
+
+// Toggle sidebar visibility
+function toggleSidebar() {
+  appStore.toggleSidebar()
+}
 </script>
 
 <template>
-  <div class="flex h-screen">
-    <!-- Main content -->
-    <div class="flex-grow transition-all duration-300 relative">
+  <div class="flex h-screen relative">
+    <!-- Main content area -->
+    <div class="flex-grow">
       <ClientOnly>
         <Book />
         <template #fallback>
@@ -22,38 +27,26 @@ const { showSidebar } = storeToRefs(appStore)
           </div>
         </template>
       </ClientOnly>
-
-      <!-- Toggle button - always present but only visible when sidebar is hidden -->
-      <div
-        class="fixed z-10 top-4 right-4 transition-opacity duration-300"
-        :class="{ 'opacity-0': showSidebar, 'opacity-100': !showSidebar }"
-      >
-        <UButton
-          size="sm"
-          icon="i-mdi-chevron-double-left"
-          variant="soft"
-          color="neutral"
-          class="w-7 opacity-80 hover:opacity-100"
-          @click="appStore.showSidebarPanel()"
-        />
-      </div>
     </div>
 
-    <!-- Sidebar - use transition for smoother effect -->
-    <transition name="slide">
-      <Sidebar v-if="showSidebar" class="w-[300px] flex-shrink-0" />
-    </transition>
+    <!-- Sidebar toggle button - positioned at the right edge, consistent placement -->
+    <div class="fixed z-20 top-4 right-[308px] transition-all duration-300" :style="{ right: showSidebar ? '308px' : '4px' }">
+      <UButton
+        size="sm"
+        :icon="showSidebar ? 'i-mdi-chevron-double-right' : 'i-mdi-chevron-double-left'"
+        variant="soft"
+        color="neutral"
+        class="w-7 opacity-80 hover:opacity-100"
+        @click="toggleSidebar"
+      />
+    </div>
+
+    <!-- Sidebar with slide transition -->
+    <div
+      class="absolute top-0 right-0 h-full transition-transform duration-300 ease-in-out"
+      :class="{ 'translate-x-0': showSidebar, 'translate-x-full': !showSidebar }"
+    >
+      <Sidebar class="w-[300px]" />
+    </div>
   </div>
 </template>
-
-<style scoped>
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.3s ease;
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(100%);
-}
-</style>

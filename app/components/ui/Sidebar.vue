@@ -67,16 +67,6 @@ function resetRotation() {
 
 <template>
   <aside class="h-[100svh] border-l border-[var(--ui-border)] overflow-auto bg-white dark:bg-[var(--color-gray-950)]">
-    <BSection>
-      <UButton
-        size="sm"
-        icon="i-mdi-chevron-double-right"
-        variant="soft"
-        color="neutral"
-        class="w-7"
-        @click="appStore.hideSidebarPanel()"
-      />
-    </BSection>
     <USeparator />
     <BSection label="Design">
       <BInputFile file="cover" label="Cover" />
@@ -104,7 +94,7 @@ function resetRotation() {
           />
         </UTooltip>
       </template>
-      
+
       <USlider v-model="rotation.x" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
       <UInput v-model="rotation.x" :required="true" :min="-180" :max="180" :step="1" type="number" size="sm" icon="i-mdi-horizontal-rotate-counterclockwise" variant="soft" />
       <USlider v-model="rotation.y" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
@@ -115,20 +105,20 @@ function resetRotation() {
     <USeparator />
     <BSection label="Animation">
       <USwitch v-model="animation.enabled" label="Enable rotation animation" size="sm" variant="soft" color="neutral" class="col-span-2" />
-      
+
       <!-- Animation controls with smooth transition effect -->
       <transition
         name="expand"
         mode="out-in"
         @before-enter="el => el.style.height = '0'"
-        @enter="el => el.style.height = el.scrollHeight + 'px'"
-        @before-leave="el => el.style.height = el.scrollHeight + 'px'"
+        @enter="el => el.style.height = `${el.scrollHeight}px`"
+        @before-leave="el => el.style.height = `${el.scrollHeight}px`"
         @leave="el => el.style.height = '0'"
       >
-        <div v-if="animation.enabled" class="animation-controls col-span-2 overflow-hidden" key="animation-controls">
+        <div v-if="animation.enabled" key="animation-controls" class="animation-controls col-span-2 overflow-hidden">
           <!-- Speed control, full width row -->
           <UInput v-model="animation.speed" type="number" :min="1" :step="1" size="sm" icon="i-mdi-camera-timer" variant="soft" label="Speed (1=fast, 10=normal)" class="mt-3 w-full" />
-          
+
           <!-- Timing and Axis on same row, 50/50 split -->
           <div class="grid grid-cols-2 gap-2 mt-3">
             <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" placeholder="Timing" size="sm" variant="soft" class="col-span-1" />
