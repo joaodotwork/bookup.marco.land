@@ -1,10 +1,17 @@
 <script setup lang="ts">
 const appStore = useAppStore()
+const bookStore = useBookStore()
 const { showSidebar } = storeToRefs(appStore)
+const { animation } = storeToRefs(bookStore)
 
 // Toggle sidebar visibility
 function toggleSidebar() {
   appStore.toggleSidebar()
+}
+
+// Toggle animation playback
+function toggleAnimation() {
+  animation.value.enabled = !animation.value.enabled
 }
 </script>
 
@@ -29,8 +36,10 @@ function toggleSidebar() {
       </ClientOnly>
     </div>
 
-    <!-- Sidebar toggle button - vertically centered with dock icons to better represent functionality -->
-    <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300" :style="{ right: showSidebar ? '308px' : '4px' }">
+    <!-- Control buttons container - aligned to the right edge -->
+    <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300 flex flex-col gap-2" 
+         :style="{ right: showSidebar ? '308px' : '4px' }">
+      <!-- Sidebar toggle button -->
       <UTooltip :text="showSidebar ? 'Hide sidebar' : 'Show sidebar'">
         <UButton
           size="sm"
@@ -39,6 +48,18 @@ function toggleSidebar() {
           color="neutral"
           class="w-7 opacity-80 hover:opacity-100"
           @click="toggleSidebar"
+        />
+      </UTooltip>
+      
+      <!-- Animation play/pause button with matching visual style -->
+      <UTooltip :text="animation.enabled ? 'Pause animation' : 'Play animation'">
+        <UButton
+          size="sm"
+          :icon="animation.enabled ? 'i-mdi-pause' : 'i-mdi-play'"
+          variant="soft"
+          color="neutral"
+          class="w-7 opacity-80 hover:opacity-100"
+          @click="toggleAnimation"
         />
       </UTooltip>
     </div>
