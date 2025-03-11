@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
     <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300 flex flex-col gap-2" 
          :style="{ right: showSidebar ? '308px' : '4px' }">
       <!-- Sidebar toggle button -->
-      <UTooltip :text="showSidebar ? 'Hide sidebar' : 'Show sidebar'">
+      <UTooltip :text="showSidebar ? 'Hide sidebar' : 'Show sidebar'" placement="left" :popper="{ offset: 12 }">
         <UButton
           size="sm"
           :icon="showSidebar ? 'i-mdi-dock-right' : 'i-mdi-dock-left'"
@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
       </UTooltip>
       
       <!-- Animation play/pause button with matching visual style -->
-      <UTooltip :text="animation.enabled ? 'Pause animation' : 'Play animation'">
+      <UTooltip :text="animation.enabled ? 'Pause animation' : 'Play animation'" placement="left" :popper="{ offset: 12 }">
         <UButton
           size="sm"
           :icon="animation.enabled ? 'i-mdi-pause' : 'i-mdi-play'"
@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
       </UTooltip>
       
       <!-- Fullscreen toggle button -->
-      <UTooltip :text="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'">
+      <UTooltip :text="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'" placement="left" :popper="{ offset: 12 }">
         <UButton
           size="sm"
           :icon="isFullscreen ? 'i-mdi-fullscreen-exit' : 'i-mdi-fullscreen'"
