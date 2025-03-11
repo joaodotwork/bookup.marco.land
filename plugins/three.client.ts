@@ -1,12 +1,11 @@
-// Three.js client-side plugin
-// This ensures Three.js is only loaded in the browser
+// Three.js client-side plugin for Nuxt 3
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 export default defineNuxtPlugin(() => {
+  // Provide THREE and OrbitControls to components
   return {
     provide: {
-      // Provide Three.js and useful components to the app
       THREE,
       OrbitControls,
     },

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { showSidebar } = storeToRefs(useAppStore())
-const { dimensions, animation, lighting } = storeToRefs(useBookStore())
+const { dimensions, rotation, animation, lighting } = storeToRefs(useBookStore())
 
 const showLicense = ref(false)
 const showInfo = ref(false)
@@ -42,6 +42,21 @@ const scale = computed({
     dimensions.value.scale = newValue / 100
   },
 })
+
+// Function to reset the rotation to its initial state and camera view
+function resetRotation() {
+  // Reset rotation values in the store
+  rotation.value.x = 0
+  rotation.value.y = 0
+  rotation.value.z = 0
+
+  // Call the global reset function if it exists
+  if (window.resetBookCamera) {
+    window.resetBookCamera()
+  }
+
+  // Function is triggered when the Camera Reset button is clicked
+}
 </script>
 
 <template>
@@ -71,11 +86,36 @@ const scale = computed({
       <UInput v-model="scale" :min="SCALE_MIN" :max="SCALE_MAX" :step="1" type="number" size="sm" icon="i-mdi-percent-outline" variant="soft" />
     </BSection>
     <USeparator />
+    <BSection label="Rotation">
+      <USlider v-model="rotation.x" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
+      <UInput v-model="rotation.x" :required="true" :min="-180" :max="180" :step="1" type="number" size="sm" icon="i-mdi-horizontal-rotate-counterclockwise" variant="soft" />
+      <USlider v-model="rotation.y" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
+      <UInput v-model="rotation.y" type="number" size="sm" icon="i-mdi-axis-z-rotate-clockwise" variant="soft" />
+      <USlider v-model="rotation.z" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
+      <UInput v-model="rotation.z" type="number" size="sm" icon="i-mdi-axis-y-rotate-clockwise" variant="soft" />
+
+      <UButton
+        icon="i-mdi-camera-retake-outline"
+        size="sm"
+        color="blue"
+        variant="solid"
+        label="Camera Reset"
+        class="mt-3 w-full col-span-2"
+        :ui="{
+          rounded: 'rounded-md',
+          padding: { sm: 'px-4 py-2' },
+          font: { weight: 'font-medium' },
+          ring: { focus: 'ring-2 ring-offset-2 ring-blue-500 ring-offset-white dark:ring-offset-gray-900' },
+        }"
+        @click="resetRotation()"
+      />
+    </BSection>
+    <USeparator />
     <BSection label="Animation">
       <USwitch v-model="animation.enabled" label="enabled" size="sm" variant="soft" color="neutral" class="col-span-2" />
-      <UInput v-model="animation.speed" type="number" size="sm" icon="i-mdi-camera-timer" variant="soft" :disabled="!animation" />
-      <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" class="w-full" size="sm" variant="soft" :disabled="!animation" />
-      <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" class="w-full" size="sm" variant="soft" :disabled="!animation" />
+      <UInput v-model="animation.speed" type="number" size="sm" icon="i-mdi-camera-timer" variant="soft" :disabled="!animation.enabled" />
+      <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" class="w-full" size="sm" variant="soft" :disabled="!animation.enabled" />
+      <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" class="w-full" size="sm" variant="soft" :disabled="!animation.enabled" />
     </BSection>
     <USeparator />
     <BSection label="Lighting">
