@@ -30,8 +30,8 @@ function logDebug(message) {
   }
 }
 
-// Simple book centering function
-function centerBook(forceRender = true) {
+// Book centering function with option to preserve camera position
+function centerBook(forceRender = true, preserveCameraPosition = false) {
   try {
     if (!book || !camera || !scene || !renderer || !rendererContainer.value) {
       return
@@ -49,41 +49,62 @@ function centerBook(forceRender = true) {
     // Make sure book is at center of scene
     book.position.set(0, 0, 0)
 
-    // Calculate appropriate camera distance
-    const baseDistance = 5.5
+    // Store current camera position if we need to preserve it
+    let oldPosition, oldTarget
+    if (preserveCameraPosition && camera) {
+      oldPosition = camera.position.clone()
+      if (controls) {
+        oldTarget = controls.target.clone()
+      }
+    }
+
+    // Calculate appropriate camera distance only if not preserving position
     const aspect = containerWidth / containerHeight
 
-    // Determine if the viewport is portrait or landscape
-    const isPortrait = aspect < 1
-    const isNarrow = containerWidth < 600 // arbitrary threshold
-
-    // Calculate camera distance based on viewport characteristics
-    let cameraDistance = baseDistance
-    if (isPortrait) {
-      // For portrait mode, move camera further back
-      cameraDistance = baseDistance * 1.2
-    }
-    else if (isNarrow) {
-      // For narrow viewports, adjust camera position
-      cameraDistance = baseDistance * 1.1
-    }
-
-    // Position camera with calculated distance
-    camera.position.set(0, 0, cameraDistance)
-    camera.lookAt(0, 0, 0)
-
-    // Very important: update projection matrix
+    // Always update aspect ratio regardless of preservation setting
     camera.aspect = aspect
     camera.updateProjectionMatrix()
 
-    // Reset controls target and update
-    if (controls) {
-      controls.target.set(0, 0, 0)
-      controls.update()
+    if (!preserveCameraPosition) {
+      // Only reset camera position if not preserving it
+      const baseDistance = 5.5
+
+      // Determine if the viewport is portrait or landscape
+      const isPortrait = aspect < 1
+      const isNarrow = containerWidth < 600 // arbitrary threshold
+
+      // Calculate camera distance based on viewport characteristics
+      let cameraDistance = baseDistance
+      if (isPortrait) {
+        // For portrait mode, move camera further back
+        cameraDistance = baseDistance * 1.2
+      }
+      else if (isNarrow) {
+        // For narrow viewports, adjust camera position
+        cameraDistance = baseDistance * 1.1
+      }
+
+      // Position camera with calculated distance
+      camera.position.set(0, 0, cameraDistance)
+      camera.lookAt(0, 0, 0)
+
+      // Reset controls target and update
+      if (controls) {
+        controls.target.set(0, 0, 0)
+        controls.update()
+      }
+    } else if (oldPosition && camera) {
+      // Restore the previous camera position
+      camera.position.copy(oldPosition)
+      
+      if (controls && oldTarget) {
+        controls.target.copy(oldTarget)
+        controls.update()
+      }
     }
 
     if (forceRender && renderer && scene && camera) {
-      // Render the centered view
+      // Render the centered view - always resize the renderer
       renderer.setSize(containerWidth, containerHeight, true)
       renderer.render(scene, camera)
     }
@@ -94,19 +115,19 @@ function centerBook(forceRender = true) {
 }
 
 // Function to handle resize and recentering with debounce for performance
-const handleResize = debounce(() => {
+const handleResize = debounce((preserveCameraPosition = false) => {
   if (!renderer || !camera || !rendererContainer.value) {
     return
   }
 
   try {
     // Call centerBook which handles everything we need
-    centerBook(true)
+    centerBook(true, preserveCameraPosition)
     
     // Add a second resize/render call after a short delay
     // This helps catch changes that might not be fully applied yet,
     // especially horizontal dimension changes during sidebar transitions
-    setTimeout(() => centerBook(true), 50)
+    setTimeout(() => centerBook(true, preserveCameraPosition), 50)
   }
   catch (error) {
     console.error('Error in handleResize:', error)
@@ -667,8 +688,10 @@ async function initBookScene() {
           console.log(`[Book] Container resized: ${width}x${height}`)
         }
         
-        // Always handle resize on any dimension change
-        handleResize()
+        // For automatic resizes from the ResizeObserver,
+        // we want to preserve camera position to prevent view reset
+        // during window resizes and layout changes
+        handleResize(true) // true = preserve camera position
       }
     })
 
@@ -678,8 +701,11 @@ async function initBookScene() {
     // Also observe the document body to catch broader layout changes
     resizeObserver.observe(document.body)
 
-    // Window resize listener as a backup
-    window.addEventListener('resize', handleResize)
+    // Create a named function for the window resize handler to allow proper cleanup
+    const windowResizeHandler = () => handleResize(true)
+    
+    // Window resize listener as a backup - preserve camera position
+    window.addEventListener('resize', windowResizeHandler)
 
     // Initial sizing
     handleResize()
@@ -1134,22 +1160,25 @@ onBeforeUnmount(() => {
   }
 
   // Remove window resize event listener
-  window.removeEventListener('resize', handleResize)
+  if (typeof windowResizeHandler === 'function') {
+    window.removeEventListener('resize', windowResizeHandler)
+  }
 })
 
 // Watch for sidebar visibility changes to update layout with special handling
 watch(() => showSidebar.value, () => {
   // For sidebar transitions, we need more aggressive resize handling
-  // to properly catch width changes throughout the animation
+  // but we want to preserve the camera position to prevent view reset
   
-  // Initial resize
-  handleResize()
+  // Initial resize with camera position preservation
+  handleResize(true) // true = preserve camera position
   
   // Additional resize calls during and after the transition
   // The transition duration is 300ms, so we spread these out
-  setTimeout(handleResize, 100) // During transition
-  setTimeout(handleResize, 200) // During transition
-  setTimeout(handleResize, 350) // Just after transition completes
+  // All preserve the camera position
+  setTimeout(() => handleResize(true), 100) // During transition
+  setTimeout(() => handleResize(true), 200) // During transition
+  setTimeout(() => handleResize(true), 350) // Just after transition completes
 })
 
 // Watch for dimension changes to ensure proper centering
