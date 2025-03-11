@@ -59,4 +59,20 @@ export default defineNuxtConfig({
   build: {
     transpile: ['three', 'three/examples/jsm/controls/OrbitControls'],
   },
+  
+  // Ensure Three.js is only loaded client-side
+  experimental: {
+    clientFallback: {
+      enabled: true
+    }
+  },
+  
+  hooks: {
+    'nitro:config': (nitroConfig) => {
+      // Add Three.js to external dependencies to prevent server-side bundling issues
+      if (!nitroConfig.externals) nitroConfig.externals = {}
+      if (!nitroConfig.externals.inline) nitroConfig.externals.inline = []
+      nitroConfig.externals.inline.push('three', 'three/examples/jsm/controls/OrbitControls')
+    }
+  },
 })

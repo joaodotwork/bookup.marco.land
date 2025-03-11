@@ -1,6 +1,23 @@
 <script setup lang="ts">
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+// Import Three.js from the Nuxt plugin if available, otherwise use direct imports
+// This provides better compatibility with Vercel's serverless environment
+let THREE
+let OrbitControls
+
+// Check if running in browser environment
+if (process.client) {
+  // Try to use the plugin
+  const nuxtApp = useNuxtApp()
+  if (nuxtApp.$THREE && nuxtApp.$OrbitControls) {
+    THREE = nuxtApp.$THREE
+    OrbitControls = nuxtApp.$OrbitControls
+  } else {
+    // Fallback to direct imports (for backward compatibility)
+    THREE = await import('three')
+    const OrbitControlsModule = await import('three/examples/jsm/controls/OrbitControls')
+    OrbitControls = OrbitControlsModule.OrbitControls
+  }
+}
 
 // Simple states - defined before use
 const error = ref(null)
@@ -471,11 +488,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    id="book"
-    ref="rendererContainer"
-    :style="{ backgroundColor: design.background }"
-  >
+  <!-- Wrap the entire component in client-only to ensure it only renders in the browser -->
+  <client-only>
+    <div
+      id="book"
+      ref="rendererContainer"
+      :style="{ backgroundColor: design.background }"
+    >
     <!-- Error message -->
     <div v-if="error" class="error-container">
       <div class="error-message">
@@ -493,6 +512,7 @@ onBeforeUnmount(() => {
     <!-- Three.js canvas -->
     <canvas ref="canvasRef" />
   </div>
+  </client-only>
 </template>
 
 <style>
