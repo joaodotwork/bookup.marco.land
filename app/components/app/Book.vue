@@ -307,6 +307,10 @@ async function initBookScene() {
     return
 
   isLoading.value = true
+  
+  // Initialize last animation time to current time
+  // This ensures smooth animation from the first frame if animation is enabled
+  lastAnimationTime = Date.now()
 
   try {
     // Get dimensions
@@ -510,11 +514,12 @@ watch(() => dimensions.value, async (_newDimensions) => {
 // Watch for animation setting changes
 watch(() => animation.value, (newAnimation, oldAnimation) => {
   // When animation is turned on, set the last time to now to avoid jumps
-  // and ensure animation starts from the current position
+  // and ensure animation starts from the current position (not from zero)
   if (newAnimation.enabled && !oldAnimation.enabled) {
     lastAnimationTime = Date.now()
     
     // Reset animation offsets and progress counters
+    // This is important to start with a clean state
     animationOffset.x = 0
     animationOffset.y = 0
     animationOffset.z = 0
@@ -522,8 +527,8 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
     animationProgress.y = 0
     animationProgress.z = 0
     
-    // Because we're resetting offsets, we need to update rotation values 
-    // to match the current visual position of the book
+    // Update rotation values to match the current visual position of the book
+    // This ensures animation starts from the current rotation, not from default values
     if (book) {
       // Convert from radians to degrees and update the store
       rotation.value.x = THREE.MathUtils.radToDeg(book.rotation.x)
@@ -533,8 +538,10 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
   }
 
   // When animation is turned off, update rotation to match current visual position
+  // This preserves the current position when animation stops
   if (!newAnimation.enabled && oldAnimation.enabled) {
     // Update the rotation store values to match the current visual position
+    // This ensures the book stays exactly where it was when animation was disabled
     if (book) {
       // Convert from radians to degrees and update the store
       rotation.value.x = THREE.MathUtils.radToDeg(book.rotation.x)
@@ -543,11 +550,12 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
     }
     
     // Reset accumulated offsets since we've stored the position in rotation values
+    // This prevents any further animation calculations from affecting the position
     animationOffset.x = 0
     animationOffset.y = 0
     animationOffset.z = 0
     
-    // Reset progress values
+    // Reset progress values to clean state
     animationProgress.x = 0
     animationProgress.y = 0
     animationProgress.z = 0

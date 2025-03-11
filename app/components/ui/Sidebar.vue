@@ -112,7 +112,7 @@ function resetRotation() {
     </BSection>
     <USeparator />
     <BSection label="Animation">
-      <USwitch v-model="animation.enabled" label="enabled" size="sm" variant="soft" color="neutral" class="col-span-2" />
+      <USwitch v-model="animation.enabled" label="Enable rotation animation" size="sm" variant="soft" color="neutral" class="col-span-2" />
       <UInput v-model="animation.speed" type="number" :min="1" :step="1" size="sm" icon="i-mdi-camera-timer" variant="soft" :disabled="!animation.enabled" label="Speed (1=fast, 10=normal)" />
       <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" class="w-full" size="sm" variant="soft" :disabled="!animation.enabled" />
       <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" class="w-full" size="sm" variant="soft" :disabled="!animation.enabled" />
