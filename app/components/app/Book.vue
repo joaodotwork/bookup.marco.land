@@ -22,38 +22,89 @@ const { design, dimensions, rotation, animation, lighting, surface } = storeToRe
 const appStore = useAppStore()
 const { showSidebar } = storeToRefs(appStore)
 
-// Ensure book is centered and fits in viewport
-function centerBook() {
-  if (!book || !camera || !scene || !renderer || !rendererContainer.value) 
+// Debug information gathering
+let debugInfo = {
+  resizeCount: 0,
+  lastWindowWidth: window.innerWidth,
+  lastContainerWidth: 0,
+  lastRenderTime: Date.now(),
+  resizeEvents: []
+}
+
+// Debug logging function
+function logDebug(message) {
+  const timestamp = new Date().toISOString().substr(11, 12) // HH:MM:SS.mmm
+  console.log(`[DEBUG ${timestamp}] ${message}`)
+  
+  // Keep track of resize events for debugging
+  if (message.includes('resize') || message.includes('width')) {
+    debugInfo.resizeEvents.push({
+      time: timestamp,
+      message,
+      windowWidth: window.innerWidth,
+      containerWidth: rendererContainer.value?.clientWidth || 0,
+      diffFromLast: window.innerWidth - debugInfo.lastWindowWidth
+    })
+    debugInfo.lastWindowWidth = window.innerWidth
+  }
+}
+
+// Advanced centering function with forced positioning
+function centerBook(forceRender = true) {
+  if (!book || !camera || !scene || !renderer || !rendererContainer.value) {
+    logDebug("centerBook: Missing required objects")
     return
-  
-  console.log('Centering book in viewport')
-  
-  // Make sure book is at center of scene
-  book.position.set(0, 0, 0)
-  
-  // Get viewport dimensions
-  const width = rendererContainer.value.clientWidth
-  const height = rendererContainer.value.clientHeight
-  const aspect = width / height
-  
-  // Calculate appropriate camera distance based on viewport aspect ratio
-  // This is key to keeping the book fully visible in the viewport
-  const baseDistance = 5.5
-  let cameraDistance = baseDistance
-  
-  // For very narrow viewports, move camera further back
-  if (aspect < 0.8) {
-    cameraDistance = baseDistance * (1.5 - aspect/2) // Move back for portrait mode
-  } 
-  // For very wide viewports
-  else if (aspect > 1.5) {
-    cameraDistance = baseDistance * (1 + (aspect-1.5)/4) // Slight adjustment for wide screens
   }
   
-  // Position camera
-  camera.position.set(0, 0, cameraDistance)
-  camera.lookAt(0, 0, 0)
+  debugInfo.resizeCount++
+  
+  // Get DOM element sizes and positions for debugging
+  const containerRect = rendererContainer.value.getBoundingClientRect()
+  const containerWidth = rendererContainer.value.clientWidth
+  const containerHeight = rendererContainer.value.clientHeight
+  
+  logDebug(`centerBook[${debugInfo.resizeCount}]: Container=${containerWidth}x${containerHeight}, `+
+           `Window=${window.innerWidth}x${window.innerHeight}, ` +
+           `DPR=${window.devicePixelRatio}`)
+  
+  // Store current values for comparison
+  debugInfo.lastContainerWidth = containerWidth
+  
+  // CRITICAL: Make sure book is at center of scene
+  if (book) {
+    book.position.set(0, 0, 0)
+  }
+  
+  // Calculate appropriate camera distance
+  const baseDistance = 5.5
+  const aspect = containerWidth / containerHeight
+  
+  // Determine if the viewport is portrait or landscape
+  const isPortrait = aspect < 1
+  const isNarrow = containerWidth < 600 // arbitrary threshold
+  
+  // Calculate camera distance based on viewport characteristics
+  let cameraDistance = baseDistance
+  if (isPortrait) {
+    // For portrait mode, move camera further back
+    cameraDistance = baseDistance * 1.2
+  } else if (isNarrow) {
+    // For narrow viewports, adjust camera position
+    cameraDistance = baseDistance * 1.1
+  }
+  
+  logDebug(`centerBook: Camera distance=${cameraDistance}, aspect=${aspect.toFixed(2)}, ` + 
+           `isPortrait=${isPortrait}, isNarrow=${isNarrow}`)
+  
+  // Position camera with calculated distance
+  if (camera) {
+    camera.position.set(0, 0, cameraDistance)
+    camera.lookAt(0, 0, 0)
+    
+    // Very important: update projection matrix
+    camera.aspect = aspect
+    camera.updateProjectionMatrix()
+  }
   
   // Reset controls target and update
   if (controls) {
@@ -61,35 +112,47 @@ function centerBook() {
     controls.update()
   }
   
-  // Render the centered view
-  renderer.render(scene, camera)
+  if (forceRender && renderer && scene && camera) {
+    // Render the centered view
+    renderer.setSize(containerWidth, containerHeight, true)
+    renderer.render(scene, camera)
+    
+    // Log time since last render
+    const now = Date.now()
+    logDebug(`centerBook: Rendered (${now - debugInfo.lastRenderTime}ms since last render)`)
+    debugInfo.lastRenderTime = now
+  }
 }
 
 // Function to handle resize and recentering
 const handleResize = () => {
-  if (!renderer || !camera || !rendererContainer.value)
+  if (!renderer || !camera || !rendererContainer.value) {
+    logDebug('handleResize: Missing required objects')
     return
+  }
 
-  // Get new dimensions
+  // Get new dimensions directly from container
   const width = rendererContainer.value.clientWidth
   const height = rendererContainer.value.clientHeight
   
-  // Log viewport dimensions
-  console.log('Resizing renderer to:', width, 'x', height)
-
-  // Update camera aspect ratio
-  camera.aspect = width / height
-  camera.updateProjectionMatrix()
-
-  // Update renderer size to match container
-  renderer.setSize(width, height, true) // Force pixel ratio update
-  renderer.setPixelRatio(window.devicePixelRatio)
+  // Calculate a hash of dimensions to detect real changes
+  const dimensionHash = `${width}_${height}`
   
-  // Apply the centering logic
-  centerBook()
+  logDebug(`handleResize: Container dimensions=${width}x${height}, window=${window.innerWidth}x${window.innerHeight}`)
+
+  // Use centerBook function which now handles:
+  // - Setting proper camera aspect ratio
+  // - Updating projection matrix
+  // - Resizing renderer
+  // - Centering book in scene
+  // - Rendering the scene
+  centerBook(true)
   
-  // Schedule another centering in the next frame to be safe
-  requestAnimationFrame(centerBook)
+  // Schedule additional centering attempts with increasing delays
+  // This ensures centering works even if DOM dimensions update asynchronously
+  setTimeout(() => centerBook(true), 50)
+  setTimeout(() => centerBook(true), 150)
+  setTimeout(() => centerBook(true), 300)
 }
 
 // Center the book in the viewport without complex zoom adaptation
@@ -579,22 +642,84 @@ async function initBookScene() {
     // Start animation
     animate()
 
-    // Add window resize listener with special handling for horizontal resizing
-    window.addEventListener('resize', () => {
-      console.log('Window resize detected')
-      
-      // Handle the base resize
+    // ROBUST SOLUTION: Use multiple techniques to detect container size changes
+    
+    // TECHNIQUE 1: MutationObserver to detect style/attribute changes that might affect size
+    const mutationObserver = new MutationObserver((mutations) => {
+      logDebug(`MutationObserver: ${mutations.length} DOM mutations detected`)
       handleResize()
-      
-      // Apply multiple centering attempts with increasing delays
-      // This ensures proper centering as the browser settles after resize
-      setTimeout(centerBook, 50)
-      setTimeout(centerBook, 150)
-      setTimeout(centerBook, 300)
     })
     
-    // Initial resize to ensure proper sizing and centering on first load
+    // Start observing attributes and subtree changes that might affect layout
+    mutationObserver.observe(rendererContainer.value, { 
+      attributes: true, 
+      childList: true,
+      subtree: true,
+      attributeFilter: ['style', 'class', 'width', 'height']
+    })
+    
+    // TECHNIQUE 2: ResizeObserver to detect actual size changes to the container
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect
+        logDebug(`ResizeObserver: Container size changed to ${width}x${height}`)
+        handleResize()
+      }
+    })
+    
+    // Start observing size changes
+    resizeObserver.observe(rendererContainer.value)
+    
+    // TECHNIQUE 3: Window resize listener for global window size changes
+    const windowResizeHandler = () => {
+      logDebug(`Window resize event: ${window.innerWidth}x${window.innerHeight}`)
+      handleResize()
+    }
+    window.addEventListener('resize', windowResizeHandler)
+    
+    // TECHNIQUE 4: Polling interval as a fallback - check for changes
+    // This is essential for catching changes that might be missed by other methods
+    const containerDimensions = { width: 0, height: 0 }
+    
+    // Store initial dimensions
+    containerDimensions.width = rendererContainer.value.clientWidth
+    containerDimensions.height = rendererContainer.value.clientHeight
+    
+    // Set up polling interval - critical for catching width reductions
+    const intervalId = setInterval(() => {
+      if (!rendererContainer.value) return
+      
+      const currWidth = rendererContainer.value.clientWidth
+      const currHeight = rendererContainer.value.clientHeight
+      
+      // Only process if there was an actual change
+      if (currWidth !== containerDimensions.width || currHeight !== containerDimensions.height) {
+        logDebug(`Polling detected size change: ${containerDimensions.width}x${containerDimensions.height} -> ${currWidth}x${currHeight}`)
+        
+        // Check for width reduction specifically
+        const widthReduced = currWidth < containerDimensions.width
+        if (widthReduced) {
+          logDebug('!!! WIDTH REDUCTION DETECTED !!!')
+        }
+        
+        // Update stored dimensions
+        containerDimensions.width = currWidth
+        containerDimensions.height = currHeight
+        
+        // Apply resize handling with extra attempts for width reduction
+        handleResize()
+      }
+    }, 100) // Check every 100ms
+    
+    // TECHNIQUE 5: Sidebar visibility change is treated specially 
+    // This will trigger resize handlers immediately when the sidebar state changes
+    
+    // TECHNIQUE 6: First-time and post-load application of centering
+    // Run initial resize handler to set up sizing and aspect ratios
     handleResize()
+    
+    // Add additional centering after a brief delay to ensure the UI is settled
+    setTimeout(handleResize, 500)
 
     isLoading.value = false
   }
@@ -1018,35 +1143,54 @@ onBeforeUnmount(() => {
     scene.environment = null
   }
 
-  // Note: we can't fully remove the specific resize handler since it was an anonymous function
-  // but that's okay since the component is being destroyed anyway
+  // Clean up all observers and event listeners
+  if (typeof resizeObserver !== 'undefined' && resizeObserver) {
+    resizeObserver.disconnect()
+  }
+  
+  if (typeof mutationObserver !== 'undefined' && mutationObserver) {
+    mutationObserver.disconnect()
+  }
+  
+  // Remove window resize event listener
+  if (typeof windowResizeHandler !== 'undefined') {
+    window.removeEventListener('resize', windowResizeHandler)
+  }
+  
+  // Clear the polling interval
+  if (typeof intervalId !== 'undefined' && intervalId) {
+    clearInterval(intervalId)
+  }
+  
+  logDebug('All observers and event listeners cleaned up')
 })
 
 // Watch for sidebar visibility changes to update layout
 watch(() => showSidebar.value, (isVisible) => {
-  console.log('Sidebar visibility changed:', isVisible ? 'visible' : 'hidden')
+  logDebug(`Sidebar visibility changed: ${isVisible ? 'VISIBLE' : 'HIDDEN'} - applying special handling`)
   
-  // When the sidebar state changes, it's similar to a horizontal resize
-  // Apply multiple centering attempts with increasing delays to catch the transition
-  setTimeout(handleResize, 50)
+  // This is a critical point for proper centering since the sidebar affects the container width.
+  // Apply multiple resize and centering attempts with increasing delays to catch the whole transition
   
-  // These later calls ensure proper centering as the transition completes
-  setTimeout(centerBook, 150)
-  setTimeout(centerBook, 300)
-  setTimeout(centerBook, 450)
+  // Immediate resize
+  handleResize()
+  
+  // Additional attempts with increasing delays
+  setTimeout(handleResize, 50)     // Beginning of transition
+  setTimeout(handleResize, 150)    // During transition
+  setTimeout(handleResize, 300)    // End of transition
+  setTimeout(handleResize, 500)    // After transition complete
 })
 
 // Watch for dimension changes to ensure proper centering
 watch(() => [dimensions.value.width, dimensions.value.height, dimensions.value.depth, dimensions.value.scale], () => {
   if (book && camera) {
-    console.log('Book dimensions changed - ensuring proper centering')
+    logDebug('Book dimensions changed - ensuring proper centering')
     
-    // First apply handleResize to update renderer and basic proportions
+    // Apply multiple resize and centering attempts with increasing delays
     handleResize()
-    
-    // Then apply our specialized centering with small delays
-    setTimeout(centerBook, 50)
-    setTimeout(centerBook, 100)
+    setTimeout(handleResize, 50)
+    setTimeout(handleResize, 150)
   }
 })
 </script>
