@@ -100,13 +100,18 @@ const handleResize = debounce(() => {
   }
 
   try {
-    // Just call centerBook which handles everything we need
+    // Call centerBook which handles everything we need
     centerBook(true)
+    
+    // Add a second resize/render call after a short delay
+    // This helps catch changes that might not be fully applied yet,
+    // especially horizontal dimension changes during sidebar transitions
+    setTimeout(() => centerBook(true), 50)
   }
   catch (error) {
     console.error('Error in handleResize:', error)
   }
-}, 100) // Debounce to prevent too many resize operations
+}, 50) // Shorter debounce time for more responsive resizing
 
 // Center the book in the viewport without complex zoom adaptation
 function adjustCameraForBookSize() {
@@ -647,13 +652,29 @@ async function initBookScene() {
     // Start animation
     animate()
 
-    // Single efficient ResizeObserver for handling size changes
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize()
+    // Set up ResizeObserver for handling container size changes
+    const resizeObserver = new ResizeObserver((entries) => {
+      // Get the specific entry for our container
+      const containerEntry = entries.find(entry => entry.target === rendererContainer.value)
+      if (containerEntry) {
+        // Extract the dimensions
+        const { width, height } = containerEntry.contentRect
+        
+        // Log if in dev mode
+        if (process.dev) {
+          console.log(`[Book] Container resized: ${width}x${height}`)
+        }
+        
+        // Always handle resize on any dimension change
+        handleResize()
+      }
     })
 
-    // Observe the container element
+    // Observe both the container element and its parent for any size changes
     resizeObserver.observe(rendererContainer.value)
+    
+    // Also observe the document body to catch broader layout changes
+    resizeObserver.observe(document.body)
 
     // Window resize listener as a backup
     window.addEventListener('resize', handleResize)
@@ -1103,18 +1124,30 @@ onBeforeUnmount(() => {
 
   // Clean up observers and event listeners
   if (resizeObserver) {
-    resizeObserver.disconnect()
+    try {
+      resizeObserver.disconnect()
+    } catch (e) {
+      console.error('Error disconnecting resize observer:', e)
+    }
   }
 
   // Remove window resize event listener
   window.removeEventListener('resize', handleResize)
 })
 
-// Watch for sidebar visibility changes to update layout
+// Watch for sidebar visibility changes to update layout with special handling
 watch(() => showSidebar.value, () => {
-  // The ResizeObserver will handle this, but add one delayed resize
-  // to catch the end of the sidebar animation
-  setTimeout(handleResize, 300)
+  // For sidebar transitions, we need more aggressive resize handling
+  // to properly catch width changes throughout the animation
+  
+  // Initial resize
+  handleResize()
+  
+  // Additional resize calls during and after the transition
+  // The transition duration is 300ms, so we spread these out
+  setTimeout(handleResize, 100) // During transition
+  setTimeout(handleResize, 200) // During transition
+  setTimeout(handleResize, 350) // Just after transition completes
 })
 
 // Watch for dimension changes to ensure proper centering
