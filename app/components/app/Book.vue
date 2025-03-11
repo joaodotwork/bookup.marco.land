@@ -32,8 +32,47 @@ const animationOffset = {
   z: 0,
 }
 
+// Store animation progress for easing functions (0-1)
+const animationProgress = {
+  x: 0,
+  y: 0,
+  z: 0,
+}
+
+// We'll use continuous rotation with easing instead of keyframes
+
 // Last timestamp for smooth animation
 let lastAnimationTime = Date.now()
+
+// Smoother easing functions with no hard stops
+const easingFunctions = {
+  // Linear is consistent speed
+  'linear': t => 0.5,
+  
+  // Ease with smooth curve (no sudden stops)
+  'ease': t => {
+    // Sine wave oscillation (0.5-1.0)
+    return 0.75 + Math.sin(t * Math.PI * 2) * 0.25
+  },
+  
+  // Ease-in starts slower, gradually speeds up
+  'ease-in': t => {
+    // Smoother sine-based variation (0.3-0.7)
+    return 0.5 + Math.sin(t * Math.PI * 2 - Math.PI/2) * 0.2
+  },
+  
+  // Ease-out starts faster, gradually slows down
+  'ease-out': t => {
+    // Inverse of ease-in
+    return 0.5 - Math.sin(t * Math.PI * 2 - Math.PI/2) * 0.2
+  },
+  
+  // Ease-in-out combines both patterns
+  'ease-in-out': t => {
+    // More pronounced sine wave (0.25-0.75)
+    return 0.5 + Math.sin(t * Math.PI * 2) * 0.25
+  }
+}
 
 // Animation function
 function animate() {
@@ -59,15 +98,43 @@ function animate() {
     const baseSpeed = 600 // degrees per second when speed is 1
     const speed = baseSpeed / speedValue // inverse relationship: higher number = slower speed
 
-    // Update the continuous animation offset based on speed
+    // Get the easing function or default to linear
+    const timingFunction = animation.value.timing || 'linear'
+    const ease = easingFunctions[timingFunction] || easingFunctions.linear
+
+    // Update the continuous animation offset based on speed and easing
     if (axis === 'Y') {
-      animationOffset.y += speed * deltaTime
+      // Update progress for easing (0-1 range, loops every 3 seconds regardless of speed)
+      // This creates a gentle easing cycle that's independent of rotation speed
+      animationProgress.y = (animationProgress.y + deltaTime / 3) % 1
+      
+      // Get easing multiplier (value between ~0.3-0.7 based on easing function)
+      const easingValue = ease(animationProgress.y)
+      
+      // Apply rotation with easing multiplier
+      // For linear, this will be a consistent speed (using 0.5 multiplier)
+      // For other easing types, speed will vary smoothly based on the easing pattern
+      animationOffset.y += speed * deltaTime * easingValue * 2
     }
     else if (axis === 'X') {
-      animationOffset.x += speed * deltaTime
+      // Update progress for easing
+      animationProgress.x = (animationProgress.x + deltaTime / 3) % 1
+      
+      // Get easing multiplier
+      const easingValue = ease(animationProgress.x)
+      
+      // Apply eased rotation
+      animationOffset.x += speed * deltaTime * easingValue * 2
     }
     else if (axis === 'Z') {
-      animationOffset.z += speed * deltaTime
+      // Update progress for easing
+      animationProgress.z = (animationProgress.z + deltaTime / 3) % 1
+      
+      // Get easing multiplier
+      const easingValue = ease(animationProgress.z)
+      
+      // Apply eased rotation
+      animationOffset.z += speed * deltaTime * easingValue * 2
     }
 
     // Apply the animation offsets to the book rotation
@@ -385,17 +452,38 @@ watch(() => animation.value, (newAnimation, oldAnimation) => {
     animationOffset.x = 0
     animationOffset.y = 0
     animationOffset.z = 0
+    // Reset progress values
+    animationProgress.x = 0
+    animationProgress.y = 0
+    animationProgress.z = 0
   }
 
   // When axis changes while animation is enabled, reset the old axis offset
   if (newAnimation.enabled && oldAnimation.enabled && newAnimation.axis !== oldAnimation.axis) {
     // Reset the old axis offset
-    if (oldAnimation.axis === 'X')
+    if (oldAnimation.axis === 'X') {
       animationOffset.x = 0
-    if (oldAnimation.axis === 'Y')
+      animationProgress.x = 0
+    }
+    if (oldAnimation.axis === 'Y') {
       animationOffset.y = 0
-    if (oldAnimation.axis === 'Z')
+      animationProgress.y = 0
+    }
+    if (oldAnimation.axis === 'Z') {
       animationOffset.z = 0
+      animationProgress.z = 0
+    }
+  }
+
+  // When timing changes, reset progress but maintain position
+  if (newAnimation.enabled && oldAnimation.enabled && newAnimation.timing !== oldAnimation.timing) {
+    const axis = newAnimation.axis || 'Y'
+    if (axis === 'X')
+      animationProgress.x = 0
+    if (axis === 'Y')
+      animationProgress.y = 0
+    if (axis === 'Z')
+      animationProgress.z = 0
   }
 }, { deep: true })
 
@@ -435,6 +523,11 @@ window.resetBookCamera = () => {
   animationOffset.x = 0
   animationOffset.y = 0
   animationOffset.z = 0
+
+  // Reset animation progress
+  animationProgress.x = 0
+  animationProgress.y = 0
+  animationProgress.z = 0
 
   // Reset animation timer
   lastAnimationTime = Date.now()

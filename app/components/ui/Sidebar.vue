@@ -16,9 +16,9 @@ const timings = ref([
   'ease-in-out',
 ])
 const axes = ref([
-  'X',
-  'Y',
-  'Z',
+  { label: 'X (Horizontal)', value: 'X' },
+  { label: 'Y (Vertical)', value: 'Y' },
+  { label: 'Z (Depth)', value: 'Z' },
 ])
 
 const lightingPresets = ref([
