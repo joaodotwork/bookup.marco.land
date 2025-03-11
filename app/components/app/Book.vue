@@ -210,6 +210,18 @@ async function initBookScene() {
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
 
+    // Add event listener for control changes
+    controls.addEventListener('change', () => {
+      // This function will be called whenever the controls change the camera
+      // But we don't update rotation values here to avoid feedback loops
+    })
+
+    // Add event listener for control end events
+    controls.addEventListener('end', () => {
+      // This is called when the user finishes interacting with the controls
+      // We could update the UI state here if needed
+    })
+
     // Start animation
     animate()
 
@@ -331,7 +343,23 @@ function resetCameraView() {
 
   // For OrbitControls, you may also want to set specific properties
   controls.target.set(0, 0, 0)
+
+  // Disable any auto-rotation
+  if (controls.autoRotate) {
+    controls.autoRotate = false
+  }
+
   controls.update()
+}
+
+// Create a global reset function that can be called from outside components
+window.resetBookCamera = () => {
+  resetCameraView()
+
+  // Also reset the rotation values in the store
+  rotation.value.x = 0
+  rotation.value.y = 0
+  rotation.value.z = 0
 }
 
 // Watch for rotation changes and apply them to the book model

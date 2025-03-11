@@ -43,15 +43,19 @@ const scale = computed({
   },
 })
 
-// Function to reset the rotation to its initial state (0, 0, 0)
-const resetRotation = () => {
-  // Use direct assignment for better reactivity
+// Function to reset the rotation to its initial state and camera view
+function resetRotation() {
+  // Reset rotation values in the store
   rotation.value.x = 0
   rotation.value.y = 0
   rotation.value.z = 0
-  
-  // Log to confirm function is being called
-  console.log('Camera reset triggered')
+
+  // Call the global reset function if it exists
+  if (window.resetBookCamera) {
+    window.resetBookCamera()
+  }
+
+  // Function is triggered when the Camera Reset button is clicked
 }
 </script>
 
@@ -89,19 +93,19 @@ const resetRotation = () => {
       <UInput v-model="rotation.y" type="number" size="sm" icon="i-mdi-axis-z-rotate-clockwise" variant="soft" />
       <USlider v-model="rotation.z" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
       <UInput v-model="rotation.z" type="number" size="sm" icon="i-mdi-axis-y-rotate-clockwise" variant="soft" />
-      
-      <UButton 
-        icon="i-mdi-camera-retake-outline" 
-        size="sm" 
-        color="blue" 
-        variant="solid" 
-        label="Camera Reset" 
+
+      <UButton
+        icon="i-mdi-camera-retake-outline"
+        size="sm"
+        color="blue"
+        variant="solid"
+        label="Camera Reset"
         class="mt-3 w-full col-span-2"
-        :ui="{ 
+        :ui="{
           rounded: 'rounded-md',
           padding: { sm: 'px-4 py-2' },
           font: { weight: 'font-medium' },
-          ring: { focus: 'ring-2 ring-offset-2 ring-blue-500 ring-offset-white dark:ring-offset-gray-900' }
+          ring: { focus: 'ring-2 ring-offset-2 ring-blue-500 ring-offset-white dark:ring-offset-gray-900' },
         }"
         @click="resetRotation()"
       />
