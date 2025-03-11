@@ -9,16 +9,16 @@ const { data: licenseData } = await useAsyncData('license-data', () => queryCont
 const { data: infoData } = await useAsyncData('info-data', () => queryContent('/').findOne())
 
 const timings = ref([
-  'linear',
-  'ease',
-  'ease-in',
-  'ease-out',
-  'ease-in-out',
+  { label: 'Linear', value: 'linear' },
+  { label: 'Ease', value: 'ease' },
+  { label: 'Ease-in', value: 'ease-in' },
+  { label: 'Ease-out', value: 'ease-out' },
+  { label: 'Ease-in-out', value: 'ease-in-out' },
 ])
 const axes = ref([
-  { label: 'X (Horizontal)', value: 'X' },
-  { label: 'Y (Vertical)', value: 'Y' },
-  { label: 'Z (Depth)', value: 'Z' },
+  { label: 'X Axis', value: 'X' },
+  { label: 'Y Axis', value: 'Y' },
+  { label: 'Z Axis', value: 'Z' },
 ])
 
 const lightingPresets = ref([
@@ -28,9 +28,9 @@ const lightingPresets = ref([
 ])
 
 const surfaceTypes = ref([
-  { label: 'Glossy', value: 'glossy', icon: 'i-mdi-shimmer', description: 'Reflective, polished finish' },
-  { label: 'Matte', value: 'matte', icon: 'i-mdi-spray', description: 'Non-reflective, smooth finish' },
   { label: 'Uncoated', value: 'uncoated', icon: 'i-mdi-texture-box', description: 'Natural paper texture' },
+  { label: 'Matte', value: 'matte', icon: 'i-mdi-spray', description: 'Non-reflective, smooth finish' },
+  { label: 'Glossy', value: 'glossy', icon: 'i-mdi-shimmer', description: 'Reflective, polished finish' },
 ])
 const SCALE_MAX = 500
 const SCALE_MIN = 1
@@ -93,35 +93,49 @@ function resetRotation() {
     </BSection>
     <USeparator />
     <BSection label="Rotation">
+      <template #header-right>
+        <UTooltip text="Reset camera and rotation">
+          <UButton
+            icon="i-mdi-camera-retake-outline"
+            size="xs"
+            color="blue"
+            variant="soft"
+            @click="resetRotation()"
+          />
+        </UTooltip>
+      </template>
+      
       <USlider v-model="rotation.x" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
       <UInput v-model="rotation.x" :required="true" :min="-180" :max="180" :step="1" type="number" size="sm" icon="i-mdi-horizontal-rotate-counterclockwise" variant="soft" />
       <USlider v-model="rotation.y" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
       <UInput v-model="rotation.y" type="number" size="sm" icon="i-mdi-axis-z-rotate-clockwise" variant="soft" />
       <USlider v-model="rotation.z" :min="-180" :max="180" :step="1" size="xs" color="neutral" />
       <UInput v-model="rotation.z" type="number" size="sm" icon="i-mdi-axis-y-rotate-clockwise" variant="soft" />
-
-      <UButton
-        icon="i-mdi-camera-retake-outline"
-        size="sm"
-        color="blue"
-        variant="solid"
-        label="Camera Reset"
-        class="mt-3 w-full col-span-2"
-        :ui="{
-          rounded: 'rounded-md',
-          padding: { sm: 'px-4 py-2' },
-          font: { weight: 'font-medium' },
-          ring: { focus: 'ring-2 ring-offset-2 ring-blue-500 ring-offset-white dark:ring-offset-gray-900' },
-        }"
-        @click="resetRotation()"
-      />
     </BSection>
     <USeparator />
     <BSection label="Animation">
       <USwitch v-model="animation.enabled" label="Enable rotation animation" size="sm" variant="soft" color="neutral" class="col-span-2" />
-      <UInput v-model="animation.speed" type="number" :min="1" :step="1" size="sm" icon="i-mdi-camera-timer" variant="soft" :disabled="!animation.enabled" label="Speed (1=fast, 10=normal)" />
-      <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" class="w-full" size="sm" variant="soft" :disabled="!animation.enabled" />
-      <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" class="w-full" size="sm" variant="soft" :disabled="!animation.enabled" />
+      
+      <!-- Animation controls with smooth transition effect -->
+      <transition
+        name="expand"
+        mode="out-in"
+        @before-enter="el => el.style.height = '0'"
+        @enter="el => el.style.height = el.scrollHeight + 'px'"
+        @before-leave="el => el.style.height = el.scrollHeight + 'px'"
+        @leave="el => el.style.height = '0'"
+      >
+        <div v-if="animation.enabled" class="animation-controls col-span-2 overflow-hidden" key="animation-controls">
+          <!-- Speed control, full width row -->
+          <UInput v-model="animation.speed" type="number" :min="1" :step="1" size="sm" icon="i-mdi-camera-timer" variant="soft" label="Speed (1=fast, 10=normal)" class="mt-3 w-full" />
+          
+          <!-- Timing and Axis on same row, 50/50 split -->
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <USelect v-model="animation.timing" :items="timings" icon="i-mdi-animation" placeholder="Timing" size="sm" variant="soft" class="col-span-1" />
+            <USelect v-model="animation.axis" :items="axes" icon="i-mdi-axis" placeholder="Axis" size="sm" variant="soft" class="col-span-1" />
+          </div>
+        </div>
+      </transition>
     </BSection>
     <USeparator />
     <BSection label="Lighting">
@@ -193,3 +207,27 @@ function resetRotation() {
     <USeparator />
   </aside>
 </template>
+
+<style scoped>
+/* Animation expansion effect for animation controls */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.animation-controls {
+  transition: all 0.3s ease;
+}
+
+/* Optional fade effect combined with height change */
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  opacity: 1;
+}
+</style>
