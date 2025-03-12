@@ -31,6 +31,10 @@ export const useBookStore = defineStore('@bookup/book', {
     surface: {
       type: 'uncoated', // Options: 'uncoated', 'matte', 'glossy'
     },
+    export: {
+      scale: '1x', // Options: '0.5x', '1x', '2x'
+      transparent: false,
+    },
   }),
-  persist: false,
+  persist: false, // Don't persist any settings between sessions
 })

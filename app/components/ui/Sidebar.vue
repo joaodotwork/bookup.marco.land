@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const appStore = useAppStore()
-const { dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
+const { dimensions, rotation, animation, lighting, surface, export: exportSettings } = storeToRefs(useBookStore())
 
 const showLicense = ref(false)
 const showInfo = ref(false)
+const showExport = ref(false) // Start collapsed by default
 
 const { data: licenseData } = await useAsyncData('license-data', () => queryContent('/license').findOne())
 const { data: infoData } = await useAsyncData('info-data', () => queryContent('/').findOne())
@@ -32,6 +33,13 @@ const surfaceTypes = ref([
   { label: 'Matte', value: 'matte', icon: 'i-mdi-spray', description: 'Non-reflective, smooth finish' },
   { label: 'Glossy', value: 'glossy', icon: 'i-mdi-shimmer', description: 'Reflective, polished finish' },
 ])
+
+const exportScales = ref([
+  { label: '0.5x', value: '0.5x', description: 'Half size' },
+  { label: '1x', value: '1x', description: 'Original size' },
+  { label: '2x', value: '2x', description: 'Double size' },
+])
+
 const SCALE_MAX = 500
 const SCALE_MIN = 1
 const scale = computed({
@@ -62,6 +70,14 @@ function resetRotation() {
   }
 
   // Function is triggered when the Camera Reset button is clicked
+}
+
+// Function to export the current view as an image
+function exportCurrentView() {
+  // This will be implemented to capture the canvas and export as image
+  if (window.exportBookImage) {
+    window.exportBookImage(exportSettings.value)
+  }
 }
 </script>
 
@@ -162,37 +178,88 @@ function resetRotation() {
       </div>
     </BSection>
     <USeparator />
-    <!-- <BSection label="Export">
-      <UButton size="sm" icon="i-mdi-download" variant="soft" label="Export HTML" color="neutral" />
-    </BSection> -->
     <BSection>
-      <UCollapsible v-model:open="showInfo" class="col-span-2">
-        <UButton color="neutral" variant="link" class="text-xs font-bold p-0 color-inherit cursor-pointer text-[var(--ui-text)]">
-          Info
-        </UButton>
-        <template #content>
-          <div v-if="infoData" class="text-xs">
-            <ContentRenderer :value="infoData">
-              <ContentRendererMarkdown :value="infoData" />
-            </ContentRenderer>
+      <template #header>
+        <div 
+          class="flex items-center w-full cursor-pointer" 
+          @click="showExport = !showExport"
+        >
+          <h2 class="text-xs font-bold">
+            Export
+          </h2>
+        </div>
+      </template>
+      <div v-if="showExport" class="col-span-2">
+        <div class="grid grid-cols-2 gap-2 w-full mt-2">
+          <USelect
+            v-model="exportSettings.scale"
+            :items="exportScales"
+            icon="i-mdi-image-size-select-large"
+            placeholder="Scale"
+            size="sm"
+            variant="soft"
+            class="col-span-1"
+          />
+          <div class="flex items-center">
+            <UCheckbox
+              v-model="exportSettings.transparent"
+              label="Transparent"
+              size="sm"
+              :color="exportSettings.transparent ? 'primary' : 'gray'"
+            />
           </div>
-        </template>
-      </UCollapsible>
+        </div>
+        <UButton
+          icon="i-mdi-export-variant"
+          size="sm"
+          color="blue"
+          variant="soft"
+          class="col-span-2 mt-2 w-full"
+          @click="exportCurrentView()"
+        >
+          Export PNG
+        </UButton>
+      </div>
     </BSection>
     <USeparator />
     <BSection>
-      <UCollapsible v-model:open="showLicense" class="col-span-2">
-        <UButton color="neutral" variant="link" class="text-xs font-bold p-0 color-inherit cursor-pointer text-[var(--ui-text)]">
-          License
-        </UButton>
-        <template #content>
-          <div v-if="licenseData" class="text-xs">
-            <ContentRenderer :value="licenseData">
-              <ContentRendererMarkdown :value="licenseData" />
-            </ContentRenderer>
-          </div>
-        </template>
-      </UCollapsible>
+      <template #header>
+        <div 
+          class="flex items-center w-full cursor-pointer" 
+          @click="showInfo = !showInfo"
+        >
+          <h2 class="text-xs font-bold">
+            Info
+          </h2>
+        </div>
+      </template>
+      <div v-if="showInfo" class="col-span-2">
+        <div v-if="infoData" class="text-xs mt-2">
+          <ContentRenderer :value="infoData">
+            <ContentRendererMarkdown :value="infoData" />
+          </ContentRenderer>
+        </div>
+      </div>
+    </BSection>
+    <USeparator />
+    <BSection>
+      <template #header>
+        <div 
+          class="flex items-center w-full cursor-pointer" 
+          @click="showLicense = !showLicense"
+        >
+          <h2 class="text-xs font-bold">
+            License
+          </h2>
+        </div>
+      </template>
+      <div v-if="showLicense" class="col-span-2">
+        <div v-if="licenseData" class="text-xs mt-2">
+          <ContentRenderer :value="licenseData">
+            <ContentRendererMarkdown :value="licenseData" />
+          </ContentRenderer>
+        </div>
+      </div>
     </BSection>
     <USeparator />
   </aside>
@@ -206,7 +273,10 @@ function resetRotation() {
   overflow: hidden;
 }
 
-.animation-controls {
+.animation-controls,
+.export-controls,
+.info-controls,
+.license-controls {
   transition: all 0.3s ease;
 }
 

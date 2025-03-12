@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/ui',
     '@pinia/nuxt',
-    'pinia-plugin-persistedstate/nuxt',
+    // 'pinia-plugin-persistedstate/nuxt', // Disabled to prevent state persistence between sessions
     '@nuxt/content',
     '@nuxt/scripts',
   ],
@@ -46,14 +46,14 @@ export default defineNuxtConfig({
    */
   vite: {
     optimizeDeps: {
-      include: ['color', 'three', 'three/examples/jsm/controls/OrbitControls']
+      include: ['color', 'three', 'three/examples/jsm/controls/OrbitControls'],
     },
     ssr: {
-      noExternal: ['three', 'three/examples/jsm/controls/OrbitControls']
+      noExternal: ['three', 'three/examples/jsm/controls/OrbitControls'],
     },
     resolve: {
-      dedupe: ['three']
-    }
+      dedupe: ['three'],
+    },
   },
 
   build: {
