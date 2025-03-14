@@ -35,12 +35,21 @@ export default defineEventHandler(async (event) => {
     // Convert base64 to blob
     const buffer = Buffer.from(base64Data, 'base64')
 
-    // Store in Vercel Blob
+    // Check if we have a token
+    const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_READ_WRITE_TOKEN
+    
+    if (!token) {
+      console.error('No Blob token available. Check BLOB_READ_WRITE_TOKEN environment variable.')
+      throw new Error('Blob storage not configured properly')
+    }
+    
+    // Store in Vercel Blob with explicit token
     const blob = await put(`images/${imageId}`, buffer, {
       contentType,
       access: 'public',
       cacheControl: 'public, max-age=31536000',
       addRandomSuffix: false,
+      token: token,
     })
 
     return {

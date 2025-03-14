@@ -246,19 +246,19 @@ export const useBookStore = defineStore('@bookup/book', {
               uploadPromises.push(
                 this.uploadImageToBlob(design.design.coverData, imageId)
                   .then(result => {
-                    // Replace data URL with Blob URL
-                    design.design.cover = result.url;
-                    delete design.design.coverIsDataUrl;
-                    delete design.design.coverData;
+                    if (result.success !== false) {
+                      // Replace data URL with Blob URL
+                      design.design.cover = result.url;
+                      delete design.design.coverIsDataUrl;
+                      delete design.design.coverData;
+                    } else {
+                      // On error, keep the coverIsDataUrl flag but remove the heavy data
+                      delete design.design.coverData;
+                      design.design.cover = '';
+                      console.warn(`Failed to upload cover image: ${result.error}`);
+                    }
                     completedUploads++;
-                    console.log(`Uploaded image ${completedUploads}/${totalUploads}`);
-                  })
-                  .catch(err => {
-                    console.error('Failed to upload cover image:', err);
-                    // Remove the data URL but keep the flag
-                    delete design.design.coverData;
-                    design.design.cover = '';
-                    completedUploads++;
+                    console.log(`Processed image ${completedUploads}/${totalUploads}`);
                   })
               );
             }
@@ -269,17 +269,19 @@ export const useBookStore = defineStore('@bookup/book', {
               uploadPromises.push(
                 this.uploadImageToBlob(design.design.backData, imageId)
                   .then(result => {
-                    design.design.back = result.url;
-                    delete design.design.backIsDataUrl;
-                    delete design.design.backData;
+                    if (result.success !== false) {
+                      // Replace data URL with Blob URL
+                      design.design.back = result.url;
+                      delete design.design.backIsDataUrl;
+                      delete design.design.backData;
+                    } else {
+                      // On error, keep the backIsDataUrl flag but remove the heavy data
+                      delete design.design.backData;
+                      design.design.back = '';
+                      console.warn(`Failed to upload back image: ${result.error}`);
+                    }
                     completedUploads++;
-                    console.log(`Uploaded image ${completedUploads}/${totalUploads}`);
-                  })
-                  .catch(err => {
-                    console.error('Failed to upload back image:', err);
-                    delete design.design.backData;
-                    design.design.back = '';
-                    completedUploads++;
+                    console.log(`Processed image ${completedUploads}/${totalUploads}`);
                   })
               );
             }
@@ -290,17 +292,19 @@ export const useBookStore = defineStore('@bookup/book', {
               uploadPromises.push(
                 this.uploadImageToBlob(design.design.spineData, imageId)
                   .then(result => {
-                    design.design.spine = result.url;
-                    delete design.design.spineIsDataUrl;
-                    delete design.design.spineData;
+                    if (result.success !== false) {
+                      // Replace data URL with Blob URL
+                      design.design.spine = result.url;
+                      delete design.design.spineIsDataUrl;
+                      delete design.design.spineData;
+                    } else {
+                      // On error, keep the spineIsDataUrl flag but remove the heavy data
+                      delete design.design.spineData;
+                      design.design.spine = '';
+                      console.warn(`Failed to upload spine image: ${result.error}`);
+                    }
                     completedUploads++;
-                    console.log(`Uploaded image ${completedUploads}/${totalUploads}`);
-                  })
-                  .catch(err => {
-                    console.error('Failed to upload spine image:', err);
-                    delete design.design.spineData;
-                    design.design.spine = '';
-                    completedUploads++;
+                    console.log(`Processed image ${completedUploads}/${totalUploads}`);
                   })
               );
             }
@@ -365,26 +369,48 @@ export const useBookStore = defineStore('@bookup/book', {
     
     // Helper to upload an image to Vercel Blob
     async uploadImageToBlob(dataUrl, imageId) {
-      // Extract content type from data URL
-      const contentType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-      
-      // Upload to our server API endpoint
-      const response = await fetch('/api/designs/upload-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          data: dataUrl,
-          imageId,
-          contentType
-        })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to upload image: ${errorText}`);
+      try {
+        console.log(`Uploading image ${imageId} to Blob storage...`);
+        
+        // Extract content type from data URL
+        const contentType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+        
+        // Upload to our server API endpoint
+        const response = await fetch('/api/designs/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: dataUrl,
+            imageId,
+            contentType
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Failed to upload image: ${errorText}`);
+          
+          // Instead of throwing, return a meaningful error
+          return { 
+            success: false, 
+            error: errorText,
+            // Return a placeholder URL that's clearly an error state
+            url: '' 
+          };
+        }
+        
+        const result = await response.json();
+        console.log(`Image ${imageId} uploaded successfully:`, result.url);
+        return result;
+      } catch (error) {
+        console.error(`Error uploading image ${imageId}:`, error);
+        // Return a structured error rather than throwing
+        return { 
+          success: false, 
+          error: error.message || 'Unknown error',
+          url: '' 
+        };
       }
-      
-      return await response.json();
     },
 
     // Load a shared design from a share ID
