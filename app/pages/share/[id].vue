@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
           <!-- Design Options -->
           <template v-if="designOptions.length > 1">
             <!-- Divider -->
-            <div class="border-t border-gray-200 dark:border-gray-700 mx-1 my-1"></div>
+            <div class="border-t-2 w-6 border-gray-300 dark:border-gray-600 my-2 opacity-80"></div>
             
             <UTooltip v-for="option in designOptions" :key="option.id" :text="option.name" placement="left" :popper="{ offset: 14 }">
               <div 
