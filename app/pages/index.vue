@@ -104,6 +104,30 @@ function selectDesign(designId) {
   bookStore.selectDesign(designId)
 }
 
+// Handle image loading errors for thumbnails
+function handleThumbnailError(event, designId) {
+  // Hide the broken image
+  event.target.style.display = 'none';
+  
+  // Find the parent element to show fallback
+  const parent = event.target.closest('div');
+  if (parent) {
+    // Create a fallback element
+    const fallback = document.createElement('div');
+    fallback.className = 'w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800';
+    
+    // Find the design to get its name
+    const design = designOptions.value.find(d => d.id === designId);
+    const letter = design?.name?.charAt(0).toUpperCase() || 'D';
+    
+    // Add the letter
+    fallback.innerHTML = `<span class="text-xs font-medium">${letter}</span>`;
+    
+    // Add to parent
+    parent.appendChild(fallback);
+  }
+}
+
 // Share button handler
 async function handleShare() {
   // Show loading state
@@ -259,15 +283,40 @@ async function handleShare() {
       <template v-if="designOptions.length > 0">
         <div class="border-t border-gray-200 dark:border-gray-700 mx-1 my-1"></div>
         
-        <UTooltip v-for="option in designOptions" :key="option.id" :text="option.name" placement="left" :popper="{ offset: 12 }">
-          <UButton
-            size="sm"
-            :icon="currentDesignId === option.id ? 'i-lucide-check-circle' : 'i-lucide-circle'"
-            variant="soft"
-            :color="currentDesignId === option.id ? 'primary' : 'neutral'"
-            class="w-7 opacity-80 hover:opacity-100"
+        <UTooltip v-for="option in designOptions" :key="option.id" :text="option.name" placement="left" :popper="{ offset: 14 }">
+          <div 
+            class="w-10 h-10 mb-2 rounded-md overflow-hidden cursor-pointer transition-all duration-200"
+            :class="[
+              currentDesignId === option.id 
+                ? 'ring-2 ring-primary-500 shadow-md scale-105' 
+                : 'ring-1 ring-gray-300 dark:ring-gray-700 opacity-70 hover:opacity-100'
+            ]"
             @click="selectDesign(option.id)"
-          />
+          >
+            <!-- Show thumbnail if available -->
+            <div v-if="option.design.cover" class="w-full h-full">
+              <img 
+                :src="option.design.cover" 
+                :alt="option.name"
+                class="w-full h-full object-cover"
+                @error="handleThumbnailError($event, option.id)" 
+              />
+            </div>
+            <!-- Fallback when no image is available -->
+            <div v-else class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+              <span class="text-xs font-medium">{{ option.name.charAt(0).toUpperCase() }}</span>
+            </div>
+            
+            <!-- Selection indicator -->
+            <div 
+              v-if="currentDesignId === option.id" 
+              class="absolute bottom-0 right-0 w-3 h-3 bg-primary-500 rounded-full transform translate-x-1/4 translate-y-1/4"
+            >
+              <span class="text-white text-[8px] flex items-center justify-center h-full">
+                ✓
+              </span>
+            </div>
+          </div>
         </UTooltip>
       </template>
     </div>
