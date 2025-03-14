@@ -57,8 +57,11 @@ async function handleShare() {
     const shareUrl = await bookStore.shareDesign()
 
     if (shareUrl) {
-      // Construct the full URL
-      const fullUrl = `${window.location.origin}${shareUrl}`
+      // Extract the design ID from the shareUrl
+      const designId = bookStore.shareId
+      
+      // Construct a URL to the share view
+      const fullUrl = `${window.location.origin}/share/${designId}`
 
       // Copy to clipboard
       await navigator.clipboard.writeText(fullUrl)
@@ -113,13 +116,14 @@ onBeforeMount(() => {
 <template>
   <BSection label="Design Options">
     <template #header-right>
-      <div class="flex gap-1">
+      <div class="flex gap-1 items-center">
         <UTooltip text="Add design">
           <UButton
             icon="i-lucide-plus"
             color="gray"
             variant="ghost"
             size="xs"
+            class="flex items-center justify-center"
             @click="handleCreateDesign"
           />
         </UTooltip>
@@ -130,6 +134,7 @@ onBeforeMount(() => {
               color="gray"
               variant="ghost"
               size="xs"
+              class="flex items-center justify-center"
               :loading="isSharing"
               @click="handleShare"
             />

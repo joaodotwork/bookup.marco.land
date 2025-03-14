@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 const props = defineProps<{
-  label?: string;
+  label?: string
 }>()
 </script>
 
@@ -8,7 +8,7 @@ const props = defineProps<{
   <section class="px-3 py-1.5 flex flex-col gap-2.5">
     <div class="flex justify-between items-center">
       <slot name="header">
-        <h2 v-if="props.label" class="text-xs font-bold">
+        <h2 v-if="props.label" class="text-xs font-bold leading-tight flex items-center">
           {{ props.label }}
         </h2>
       </slot>

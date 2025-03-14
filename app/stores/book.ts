@@ -11,12 +11,6 @@ interface DesignOption {
     back: string
     spine: string
   }
-  animation: {
-    enabled: boolean
-    speed: number
-    timing: string
-    axis: string
-  }
   lighting: {
     preset: string
   }
@@ -39,12 +33,6 @@ function createDefaultDesign(): DesignOption {
       cover: '',
       back: '',
       spine: '',
-    },
-    animation: {
-      enabled: false, // Animation is disabled by default, user can enable it manually
-      speed: 1, // Higher values = slower animation: 1 = fast (60 deg/sec), 10 = normal (6 deg/sec), 100 = very slow (0.6 deg/sec)
-      timing: 'linear',
-      axis: 'Y',
     },
     lighting: {
       preset: 'ambient',
@@ -82,6 +70,13 @@ export const useBookStore = defineStore('@bookup/book', {
     },
     // Background color - shared across all designs
     background: '#0072FF',
+    // Animation settings - shared across all designs
+    animation: {
+      enabled: false, // Animation is disabled by default, user can enable it manually
+      speed: 1, // Higher values = slower animation: 1 = fast (60 deg/sec), 10 = normal (6 deg/sec), 100 = very slow (0.6 deg/sec)
+      timing: 'linear',
+      axis: 'Y',
+    },
   }),
   getters: {
     // Get the current active design
@@ -97,7 +92,6 @@ export const useBookStore = defineStore('@bookup/book', {
         background: state.background,
       }
     },
-    animation: state => state.currentDesign.animation,
     lighting: state => state.currentDesign.lighting,
     surface: state => state.currentDesign.surface,
     export: state => state.currentDesign.export,
@@ -174,7 +168,7 @@ export const useBookStore = defineStore('@bookup/book', {
       }
       return false
     },
-    // Share the current design
+    // Share the current design and all options
     async shareDesign() {
       try {
         // Generate a new share ID
@@ -183,15 +177,20 @@ export const useBookStore = defineStore('@bookup/book', {
         // For debugging purposes
         console.log('Creating share with ID:', this.shareId)
 
-        // Create a complete design object that includes shared properties
-        const completeDesign = {
-          ...this.currentDesign,
+        // Create a complete data object that includes all designs and shared properties
+        const completeData = {
+          // Include all design options
+          designOptions: this.designOptions,
+          // Current design ID
+          currentDesignId: this.currentDesignId,
+          // Shared properties
           dimensions: this.dimensions,
           rotation: this.rotation,
           background: this.background,
+          animation: this.animation,
         }
         
-        console.log('Design to share:', JSON.stringify(completeDesign))
+        console.log('Data to share:', JSON.stringify(completeData))
 
         // Call the API to share the design
         const response = await fetch('/api/designs/share', {
@@ -200,7 +199,7 @@ export const useBookStore = defineStore('@bookup/book', {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            design: completeDesign,
+            design: completeData,
             shareId: this.shareId,
           }),
         })
@@ -233,43 +232,94 @@ export const useBookStore = defineStore('@bookup/book', {
         }
 
         // Get the shared design data
-        const sharedDesign = await response.json()
-        console.log('Loaded shared design:', sharedDesign)
+        const sharedData = await response.json()
+        console.log('Loaded shared design:', sharedData)
 
-        // Extract shared properties if they exist
-        if (sharedDesign.dimensions) {
-          this.dimensions = sharedDesign.dimensions
+        // Handle the new data format with multiple designs
+        if (sharedData.designOptions && Array.isArray(sharedData.designOptions)) {
+          // Clear existing designs
+          this.designOptions = []
+          
+          // Add each design with a new ID
+          sharedData.designOptions.forEach(design => {
+            // Create a new design with a new ID but keep the name
+            const newDesign = {
+              ...design,
+              id: nanoid(), // Give it a new ID to avoid conflicts
+            }
+            this.designOptions.push(newDesign)
+          })
+          
+          // Set the current design ID to match the position of the original current design
+          if (this.designOptions.length > 0) {
+            // Try to find the index of the current design in the original array
+            const currentIndex = sharedData.designOptions.findIndex(d => d.id === sharedData.currentDesignId)
+            
+            // If found, use the corresponding new design's ID
+            if (currentIndex >= 0 && currentIndex < this.designOptions.length) {
+              this.currentDesignId = this.designOptions[currentIndex].id
+            } else {
+              // Fallback to the first design
+              this.currentDesignId = this.designOptions[0].id
+            }
+          }
+        } else {
+          // Handle legacy format with a single design
+          // Extract shared properties if they exist
+          if (sharedData.dimensions) {
+            this.dimensions = sharedData.dimensions
+          }
+          
+          if (sharedData.rotation) {
+            this.rotation = sharedData.rotation
+          }
+          
+          if (sharedData.background) {
+            this.background = sharedData.background
+          }
+          
+          if (sharedData.animation) {
+            this.animation = sharedData.animation
+          }
+
+          // Create a new design based on the shared data (only the design-specific parts)
+          const newDesign = {
+            id: nanoid(),
+            name: `Shared Design (${new Date().toLocaleTimeString()})`,
+            createdAt: new Date().toISOString(),
+            design: {
+              cover: sharedData.design?.cover || '',
+              back: sharedData.design?.back || '',
+              spine: sharedData.design?.spine || '',
+            },
+            lighting: sharedData.lighting || this.currentDesign.lighting,
+            surface: sharedData.surface || this.currentDesign.surface,
+            export: sharedData.export || this.currentDesign.export,
+          }
+
+          // Add the design to our options
+          this.designOptions.push(newDesign)
+
+          // Select the new design
+          this.currentDesignId = newDesign.id
+        }
+
+        // Extract shared properties regardless of format
+        if (sharedData.dimensions) {
+          this.dimensions = sharedData.dimensions
         }
         
-        if (sharedDesign.rotation) {
-          this.rotation = sharedDesign.rotation
+        if (sharedData.rotation) {
+          this.rotation = sharedData.rotation
         }
         
-        if (sharedDesign.background) {
-          this.background = sharedDesign.background
+        if (sharedData.background) {
+          this.background = sharedData.background
         }
-
-        // Create a new design based on the shared data (only the design-specific parts)
-        const newDesign = {
-          id: nanoid(),
-          name: `Shared Design (${new Date().toLocaleTimeString()})`,
-          createdAt: new Date().toISOString(),
-          design: {
-            cover: sharedDesign.design?.cover || '',
-            back: sharedDesign.design?.back || '',
-            spine: sharedDesign.design?.spine || '',
-          },
-          animation: sharedDesign.animation || this.currentDesign.animation,
-          lighting: sharedDesign.lighting || this.currentDesign.lighting,
-          surface: sharedDesign.surface || this.currentDesign.surface,
-          export: sharedDesign.export || this.currentDesign.export,
+        
+        if (sharedData.animation) {
+          this.animation = sharedData.animation
         }
-
-        // Add the design to our options
-        this.designOptions.push(newDesign)
-
-        // Select the new design
-        this.currentDesignId = newDesign.id
 
         return true
       }

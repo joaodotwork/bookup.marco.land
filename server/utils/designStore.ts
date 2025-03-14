@@ -10,16 +10,54 @@ declare global {
 if (!globalThis.sharedDesigns) {
   globalThis.sharedDesigns = new Map<string, any>()
   
-  // Add a test design that's always available
+  // Add a test design that's always available with multiple design options
   const testDesign = {
-    id: 'test-design',
-    name: 'Test Design',
-    createdAt: new Date().toISOString(),
-    design: {
-      cover: '',
-      back: '',
-      spine: '',
-    },
+    // Include multiple design options
+    designOptions: [
+      {
+        id: 'design-1',
+        name: 'Cover Design 1',
+        createdAt: new Date().toISOString(),
+        design: {
+          cover: '',
+          back: '',
+          spine: '',
+        },
+        lighting: {
+          preset: 'ambient',
+        },
+        surface: {
+          type: 'uncoated',
+        },
+        export: {
+          scale: '1x',
+          transparent: false,
+        },
+      },
+      {
+        id: 'design-2',
+        name: 'Cover Design 2',
+        createdAt: new Date().toISOString(),
+        design: {
+          cover: '',
+          back: '',
+          spine: '',
+        },
+        lighting: {
+          preset: 'studio',
+        },
+        surface: {
+          type: 'matte',
+        },
+        export: {
+          scale: '1x',
+          transparent: false,
+        },
+      }
+    ],
+    // Current design ID
+    currentDesignId: 'design-1',
+    // Shared properties
     dimensions: {
       width: 200,
       height: 270,
@@ -37,17 +75,7 @@ if (!globalThis.sharedDesigns) {
       speed: 1,
       timing: 'linear',
       axis: 'Y',
-    },
-    lighting: {
-      preset: 'ambient',
-    },
-    surface: {
-      type: 'uncoated',
-    },
-    export: {
-      scale: '1x',
-      transparent: false,
-    },
+    }
   }
   
   globalThis.sharedDesigns.set('test', testDesign)

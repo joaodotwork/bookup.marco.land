@@ -3,7 +3,11 @@ const appStore = useAppStore()
 const bookStore = useBookStore()
 const { showSidebar } = storeToRefs(appStore)
 const { animation } = storeToRefs(bookStore)
+const { designOptions, currentDesignId } = storeToRefs(bookStore)
 const isFullscreen = ref(false)
+const isSharing = ref(false)
+const shareMessage = ref('')
+const showShareMessage = ref(false)
 
 // Toggle sidebar visibility
 function toggleSidebar() {
@@ -22,14 +26,16 @@ async function toggleFullscreen() {
       // Enter fullscreen
       await document.documentElement.requestFullscreen()
       isFullscreen.value = true
-    } else {
+    }
+    else {
       // Exit fullscreen
       if (document.exitFullscreen) {
         await document.exitFullscreen()
         isFullscreen.value = false
       }
     }
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Error toggling fullscreen:', err)
   }
 }
@@ -38,23 +44,121 @@ async function toggleFullscreen() {
 useHead({
   meta: [
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
-    { name: 'mobile-web-app-capable', content: 'yes' }
-  ]
+    { name: 'mobile-web-app-capable', content: 'yes' },
+  ],
 })
 
 // Create a named handler for fullscreen change events
-const handleFullscreenChange = () => {
+function handleFullscreenChange() {
   isFullscreen.value = !!document.fullscreenElement
 }
 
 // Update fullscreen state when changed from browser controls
+// Function to load a design by its ID
+async function loadDesignById(designId) {
+  try {
+    // Call the API to get the shared design
+    const response = await fetch(`/api/designs/${designId}`)
+
+    if (!response.ok) {
+      console.error('Failed to load design by ID:', await response.text())
+      return false
+    }
+
+    // Import the design
+    const success = await bookStore.loadSharedDesign(designId)
+    if (success) {
+      console.log('Successfully loaded design:', designId)
+    }
+    return success
+  } catch (error) {
+    console.error('Error loading design by ID:', error)
+    return false
+  }
+}
+
 onMounted(() => {
   document.addEventListener('fullscreenchange', handleFullscreenChange)
+  
+  // Initialize the store
+  bookStore.init()
+  
+  // Check if there's a design ID in the query parameter
+  const route = useRoute()
+  const designId = route.query.design
+  
+  if (designId && typeof designId === 'string') {
+    console.log('Found design ID in query parameter:', designId)
+    
+    // Try to load the design
+    loadDesignById(designId)
+  }
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
 })
+
+// Function to select a design option
+function selectDesign(designId) {
+  bookStore.selectDesign(designId)
+}
+
+// Share button handler
+async function handleShare() {
+  // Show loading state
+  isSharing.value = true
+
+  try {
+    // Call the store method to share the design
+    const shareUrl = await bookStore.shareDesign()
+
+    if (shareUrl) {
+      // Extract the design ID from the shareUrl
+      const designId = bookStore.shareId
+      
+      // Construct a URL to the share view
+      const fullUrl = `${window.location.origin}/share/${designId}`
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(fullUrl)
+
+      // Show success message
+      shareMessage.value = `✓ Link copied`
+      showShareMessage.value = true
+      
+      // Auto-hide message after 3 seconds
+      setTimeout(() => {
+        showShareMessage.value = false
+      }, 3000)
+    } 
+    else {
+      // Show error message
+      shareMessage.value = 'Failed to generate link'
+      showShareMessage.value = true
+      
+      // Auto-hide message after 3 seconds
+      setTimeout(() => {
+        showShareMessage.value = false
+      }, 3000)
+    }
+  }
+  catch (err) {
+    console.error('Failed to share design:', err)
+    
+    // Show error message
+    shareMessage.value = 'Error sharing design'
+    showShareMessage.value = true
+    
+    // Auto-hide message after 3 seconds
+    setTimeout(() => {
+      showShareMessage.value = false
+    }, 3000)
+  }
+  finally {
+    isSharing.value = false
+  }
+}
 </script>
 
 <template>
@@ -79,8 +183,10 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Control buttons container - aligned to the right edge -->
-    <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300 flex flex-col gap-2" 
-         :style="{ right: showSidebar ? '308px' : '4px' }">
+    <div
+      class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300 flex flex-col gap-2"
+      :style="{ right: showSidebar ? '308px' : '4px' }"
+    >
       <!-- Sidebar toggle button -->
       <UTooltip :text="showSidebar ? 'Hide sidebar' : 'Show sidebar'" placement="left" :popper="{ offset: 12 }">
         <UButton
@@ -92,7 +198,7 @@ onBeforeUnmount(() => {
           @click="toggleSidebar"
         />
       </UTooltip>
-      
+
       <!-- Animation play/pause button with matching visual style -->
       <UTooltip :text="animation.enabled ? 'Pause animation' : 'Play animation'" placement="left" :popper="{ offset: 12 }">
         <UButton
@@ -104,7 +210,7 @@ onBeforeUnmount(() => {
           @click="toggleAnimation"
         />
       </UTooltip>
-      
+
       <!-- Fullscreen toggle button -->
       <UTooltip :text="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'" placement="left" :popper="{ offset: 12 }">
         <UButton
@@ -116,6 +222,54 @@ onBeforeUnmount(() => {
           @click="toggleFullscreen"
         />
       </UTooltip>
+      
+      <!-- Divider -->
+      <div class="border-t border-gray-200 dark:border-gray-700 mx-1 my-1"></div>
+      
+      <!-- Share button -->
+      <div class="relative">
+        <UTooltip text="Share design" placement="left" :popper="{ offset: 12 }">
+          <UButton
+            size="sm"
+            icon="i-lucide-share"
+            variant="soft"
+            color="neutral"
+            class="w-7 opacity-80 hover:opacity-100"
+            :loading="isSharing"
+            @click="handleShare"
+          />
+        </UTooltip>
+        
+        <!-- Share message popup -->
+        <Transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="translate-y-1 opacity-0"
+          enter-to-class="translate-y-0 opacity-100"
+          leave-active-class="transition duration-150 ease-in"
+          leave-from-class="translate-y-0 opacity-100"
+          leave-to-class="translate-y-1 opacity-0"
+        >
+          <div v-if="showShareMessage" class="absolute top-0 right-full mr-2 z-50 p-2 bg-white dark:bg-gray-800 text-xs rounded shadow-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+            {{ shareMessage }}
+          </div>
+        </Transition>
+      </div>
+      
+      <!-- Design Options -->
+      <template v-if="designOptions.length > 0">
+        <div class="border-t border-gray-200 dark:border-gray-700 mx-1 my-1"></div>
+        
+        <UTooltip v-for="option in designOptions" :key="option.id" :text="option.name" placement="left" :popper="{ offset: 12 }">
+          <UButton
+            size="sm"
+            :icon="currentDesignId === option.id ? 'i-lucide-check-circle' : 'i-lucide-circle'"
+            variant="soft"
+            :color="currentDesignId === option.id ? 'primary' : 'neutral'"
+            class="w-7 opacity-80 hover:opacity-100"
+            @click="selectDesign(option.id)"
+          />
+        </UTooltip>
+      </template>
     </div>
 
     <!-- Sidebar with slide transition -->
