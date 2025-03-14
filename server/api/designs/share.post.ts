@@ -15,7 +15,14 @@ export default defineEventHandler(async (event) => {
   const { design, shareId } = body
 
   // Store the design in our store
-  storeDesign(shareId, design)
+  const result = await storeDesign(shareId, design)
+
+  if (!result.success) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: result.error || 'Failed to store design',
+    })
+  }
 
   // Return the share ID and a shareable URL
   return {

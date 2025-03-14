@@ -13,14 +13,14 @@ export default defineEventHandler(async (event) => {
   }
 
   // Fetch the design from our store
-  const design = getDesign(id)
+  const result = await getDesign(id)
 
-  if (!design) {
+  if (!result.success) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Design not found',
+      statusMessage: result.error || 'Design not found',
     })
   }
 
-  return design
+  return result.data
 })

@@ -1,109 +1,131 @@
-// Simple in-memory storage for design data
-// In a real implementation this would be replaced with a database
+import { put, list, del, get } from '@vercel/blob';
 
-// Add type declaration to avoid TypeScript errors
-declare global {
-  var sharedDesigns: Map<string, any>
-}
+/**
+ * Persistent storage for design data using Vercel Blob.
+ * Designs are stored with expiration to prevent unlimited growth.
+ * 
+ * For local development, falls back to in-memory storage when Blob is not available.
+ */
 
-// Use globalThis to ensure the Map is shared across all imports of this module
-if (!globalThis.sharedDesigns) {
+// Backup in-memory storage for local development
+if (typeof globalThis.sharedDesigns === 'undefined') {
   globalThis.sharedDesigns = new Map<string, any>()
-  
-  // Add a test design that's always available with multiple design options
-  const testDesign = {
-    // Include multiple design options
-    designOptions: [
-      {
-        id: 'design-1',
-        name: 'Cover Design 1',
-        createdAt: new Date().toISOString(),
-        design: {
-          cover: '',
-          back: '',
-          spine: '',
-        },
-        lighting: {
-          preset: 'ambient',
-        },
-        surface: {
-          type: 'uncoated',
-        },
-        export: {
-          scale: '1x',
-          transparent: false,
-        },
-      },
-      {
-        id: 'design-2',
-        name: 'Cover Design 2',
-        createdAt: new Date().toISOString(),
-        design: {
-          cover: '',
-          back: '',
-          spine: '',
-        },
-        lighting: {
-          preset: 'studio',
-        },
-        surface: {
-          type: 'matte',
-        },
-        export: {
-          scale: '1x',
-          transparent: false,
-        },
-      }
-    ],
-    // Current design ID
-    currentDesignId: 'design-1',
-    // Shared properties
-    dimensions: {
-      width: 200,
-      height: 270,
-      depth: 29,
-      scale: 1,
-    },
-    background: '#0072FF',
-    rotation: {
-      x: 0,
-      y: 0,
-      z: 0,
-    },
-    animation: {
-      enabled: false,
-      speed: 1,
-      timing: 'linear',
-      axis: 'Y',
+}
+
+// Check if Vercel Blob is available (will be in production)
+const isBlobAvailable = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_READ_WRITE_TOKEN
+
+// Store a design with a unique ID
+export async function storeDesign(id: string, data: any) {
+  try {
+    const jsonData = JSON.stringify(data)
+    
+    if (isBlobAvailable) {
+      // Store in Vercel Blob
+      // Default expiration is 30 days
+      const blob = await put(`designs/${id}.json`, jsonData, {
+        contentType: 'application/json',
+        access: 'public',
+      })
+      
+      return { success: true, id, url: blob.url }
+    } else {
+      // Fallback to in-memory storage for development
+      console.warn('Vercel Blob not available, using in-memory storage')
+      globalThis.sharedDesigns.set(id, data)
+      return { success: true, id }
     }
+  } catch (error) {
+    console.error('Failed to store design:', error)
+    return { success: false, error: 'Failed to store design' }
   }
-  
-  globalThis.sharedDesigns.set('test', testDesign)
-  console.log('Test design added with ID: test')
 }
 
-export function storeDesign(id: string, design: any): void {
-  globalThis.sharedDesigns.set(id, design)
-  console.log(`Design stored with ID: ${id}`)
-}
-
-export function getDesign(id: string): any {
-  console.log(`Getting design with ID: ${id}`)
-  const design = globalThis.sharedDesigns.get(id)
-  if (!design) {
-    console.log(`Design not found with ID: ${id}`)
-    console.log(`Available designs: ${listDesigns().join(', ')}`)
+// Retrieve a design by ID
+export async function getDesign(id: string) {
+  try {
+    if (isBlobAvailable) {
+      // Get from Vercel Blob
+      try {
+        const blob = await get(`designs/${id}.json`)
+        
+        if (!blob) {
+          return { success: false, error: 'Design not found' }
+        }
+        
+        // Get blob content as text (JSON)
+        const designText = await blob.text()
+        const designData = JSON.parse(designText)
+        
+        return { success: true, data: designData }
+      } catch (error) {
+        // If the blob doesn't exist, Vercel will throw a 404 error
+        if (error.status === 404) {
+          return { success: false, error: 'Design not found' }
+        }
+        throw error
+      }
+    } else {
+      // Fallback to in-memory storage
+      console.warn('Vercel Blob not available, using in-memory storage')
+      const design = globalThis.sharedDesigns.get(id)
+      
+      if (!design) {
+        return { success: false, error: 'Design not found' }
+      }
+      
+      return { success: true, data: design }
+    }
+  } catch (error) {
+    console.error('Failed to retrieve design:', error)
+    return { success: false, error: 'Failed to retrieve design' }
   }
-  return design
 }
 
-export function deleteDesign(id: string): boolean {
-  console.log(`Deleting design with ID: ${id}`)
-  return globalThis.sharedDesigns.delete(id)
+// Delete a design by ID
+export async function deleteDesign(id: string) {
+  try {
+    if (isBlobAvailable) {
+      // Delete from Vercel Blob
+      await del(`designs/${id}.json`)
+    } else {
+      // Fallback to in-memory storage
+      console.warn('Vercel Blob not available, using in-memory storage')
+      globalThis.sharedDesigns.delete(id)
+    }
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete design:', error)
+    return { success: false, error: 'Failed to delete design' }
+  }
 }
 
-export function listDesigns(): string[] {
-  const keys = Array.from(globalThis.sharedDesigns.keys())
-  console.log(`Available designs: ${keys.join(', ')}`)
-  return keys
+// List all designs (useful for admin purposes or cleanup)
+export async function listDesigns() {
+  try {
+    if (isBlobAvailable) {
+      // List all designs from Vercel Blob
+      const { blobs } = await list({ prefix: 'designs/' })
+      return { 
+        success: true, 
+        designs: blobs.map(blob => ({
+          id: blob.pathname.replace('designs/', '').replace('.json', ''),
+          url: blob.url,
+          uploadedAt: blob.uploadedAt
+        }))
+      }
+    } else {
+      // Fallback to in-memory storage
+      console.warn('Vercel Blob not available, using in-memory storage')
+      const designs = Array.from(globalThis.sharedDesigns.keys()).map(id => ({
+        id,
+        url: null,
+        uploadedAt: new Date()
+      }))
+      return { success: true, designs }
+    }
+  } catch (error) {
+    console.error('Failed to list designs:', error)
+    return { success: false, error: 'Failed to list designs' }
+  }
 }

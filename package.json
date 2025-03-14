@@ -19,6 +19,7 @@
     "@nuxt/ui": "3.0.0-alpha.10",
     "@pinia/nuxt": "^0.9.0",
     "@types/three": "^0.174.0",
+    "@vercel/blob": "^0.27.3",
     "html2canvas": "^1.4.1",
     "html2canvas-pro": "^1.5.8",
     "nuxt": "^3.14.1592",
