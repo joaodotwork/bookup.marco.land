@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
         <Book />
         
         <!-- Control buttons container - aligned to the right edge -->
-        <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-4 flex flex-col gap-2">
+        <div class="fixed z-20 top-1/2 transform -translate-y-1/2 right-4 flex flex-col gap-2 items-center">
           <!-- Reset camera button -->
           <UTooltip text="Reset camera view" placement="left" :popper="{ offset: 12 }">
             <UButton
