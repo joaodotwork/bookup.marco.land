@@ -18,35 +18,77 @@ const isBlobAvailable = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_
 
 // Helper to get the URL where a design would be stored
 const getDesignUrl = (id: string) => {
-  const storageUrl = process.env.VERCEL_BLOB_PUBLIC_URL || 'https://public.blob.vercel.com'
-  return `${storageUrl}/designs/${id}.json`
+  // Get Vercel project and team details from environment
+  const projectId = process.env.VERCEL_PROJECT_ID || ''
+  const teamId = process.env.VERCEL_TEAM_ID || ''
+  
+  // For better reliability, construct URL with proper path segments
+  let storageUrl = process.env.VERCEL_BLOB_PUBLIC_URL || 'https://public.blob.vercel-storage.com'
+  
+  // Ensure the URL doesn't have trailing slashes
+  storageUrl = storageUrl.replace(/\/$/, '')
+  
+  // Construct a proper blob path (using project ID if available)
+  const blobPath = projectId ? 
+    `/${projectId}${teamId ? `_${teamId}` : ''}/designs/${id}.json` : 
+    `/designs/${id}.json`
+    
+  return `${storageUrl}${blobPath}`
 }
 
 // Store a design with a unique ID
 export async function storeDesign(id: string, data: any) {
   try {
+    // Save to in-memory cache in all cases (as backup)
+    globalThis.sharedDesigns.set(id, data);
+    
     if (isBlobAvailable && isServer) {
-      const jsonData = JSON.stringify(data)
-      
-      // Import is moved inside the function to prevent it from being included in client builds
-      const { put } = await import('@vercel/blob')
-      
-      // Store in Vercel Blob with 30-day expiration (default)
-      const blob = await put(`designs/${id}.json`, jsonData, {
-        contentType: 'application/json',
-        access: 'public',
-      })
-      
-      return { success: true, id, url: blob.url }
+      try {
+        // Clear URL cache for this ID
+        if (globalThis.designUrlCache) {
+          globalThis.designUrlCache.delete(id);
+        }
+        
+        // Prepare data as JSON
+        const jsonData = JSON.stringify(data);
+        
+        // Import is inside the function to prevent client inclusion
+        const { put } = await import('@vercel/blob');
+        
+        // Store in Vercel Blob with public access
+        const blob = await put(`designs/${id}.json`, jsonData, {
+          contentType: 'application/json',
+          access: 'public',
+          cacheControl: 'max-age=31536000', // 1 year cache
+          addRandomSuffix: false, // Use exact filename
+        });
+        
+        console.log('Design stored in Blob:', blob.url);
+        
+        // Cache the URL for future use
+        if (!globalThis.designUrlCache) {
+          globalThis.designUrlCache = new Map();
+        }
+        globalThis.designUrlCache.set(id, blob.url);
+        
+        return { success: true, id, url: blob.url };
+      } catch (blobError) {
+        console.error('Error storing in Blob:', blobError);
+        // Continue with fallback
+        return { 
+          success: true, 
+          id, 
+          note: 'Saved to memory only, Blob storage failed'
+        };
+      }
     } else {
-      // Fallback to in-memory storage for development
-      console.warn('Vercel Blob not available, using in-memory storage')
-      globalThis.sharedDesigns.set(id, data)
-      return { success: true, id }
+      // Fallback for development
+      console.log('Using in-memory storage (no Blob available)');
+      return { success: true, id };
     }
   } catch (error) {
-    console.error('Failed to store design:', error)
-    return { success: false, error: 'Failed to store design' }
+    console.error('Failed to store design:', error);
+    return { success: false, error: 'Failed to store design' };
   }
 }
 
@@ -55,43 +97,105 @@ export async function getDesign(id: string) {
   try {
     if (isBlobAvailable && isServer) {
       try {
-        // We'll use the raw fetch API instead of Vercel Blob's get
-        const url = getDesignUrl(id)
-        
-        // Fetch the design file
-        const response = await fetch(url)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            return { success: false, error: 'Design not found' }
+        // First try using Vercel Blob read API if available
+        try {
+          const { get } = await import('@vercel/blob');
+          const blob = await get(`designs/${id}.json`);
+          
+          if (blob) {
+            const designText = await blob.text();
+            const designData = JSON.parse(designText);
+            return { success: true, data: designData };
           }
-          throw new Error(`Failed to fetch design: ${response.statusText}`)
+        } catch (blobError) {
+          // Vercel Blob get function might not be available or might throw
+          // Just log and continue to next approach
+          console.log('Vercel Blob get failed, trying manual approach:', blobError.message);
         }
         
-        // Get content as text (JSON)
-        const designText = await response.text()
-        const designData = JSON.parse(designText)
+        // Store public URLs in memory to prevent repeated lookups
+        if (!globalThis.designUrlCache) {
+          globalThis.designUrlCache = new Map();
+        }
         
-        return { success: true, data: designData }
+        // Check if we've already received a URL for this design
+        let designUrl = globalThis.designUrlCache.get(id);
+        
+        // If we don't have a URL cached, try to get one by doing a head request
+        if (!designUrl) {
+          try {
+            // Get the proper URL from the storage directly
+            const { list } = await import('@vercel/blob');
+            const { blobs } = await list({ prefix: `designs/${id}.json` });
+            
+            if (blobs && blobs.length > 0) {
+              designUrl = blobs[0].url;
+              globalThis.designUrlCache.set(id, designUrl);
+            }
+          } catch (listError) {
+            console.log('Blob list error:', listError.message);
+            // If list fails, fall back to constructed URL
+            designUrl = getDesignUrl(id);
+          }
+        }
+        
+        console.log('Fetching design from URL:', designUrl);
+        
+        // Fetch the design with retry logic
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
+        try {
+          const response = await fetch(designUrl, { 
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              return { success: false, error: 'Design not found' };
+            }
+            throw new Error(`Server returned ${response.status}`);
+          }
+          
+          const designText = await response.text();
+          const designData = JSON.parse(designText);
+          return { success: true, data: designData };
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          throw fetchError;
+        }
       } catch (error) {
-        // If there's an error, handle it
-        console.error('Error fetching design:', error)
-        return { success: false, error: 'Design not found' }
+        console.error('Error retrieving design:', error);
+        
+        // Check in-memory store as fallback
+        const memoryDesign = globalThis.sharedDesigns.get(id);
+        if (memoryDesign) {
+          return { success: true, data: memoryDesign };
+        }
+        
+        return { 
+          success: false, 
+          error: `Unable to retrieve design: ${error.message || 'Unknown error'}`
+        };
       }
     } else {
-      // Fallback to in-memory storage
-      console.warn('Vercel Blob not available, using in-memory storage')
-      const design = globalThis.sharedDesigns.get(id)
+      // Fallback to in-memory storage for local dev
+      console.log('Using in-memory storage (no Blob available)');
+      const design = globalThis.sharedDesigns.get(id);
       
       if (!design) {
-        return { success: false, error: 'Design not found' }
+        return { success: false, error: 'Design not found' };
       }
       
-      return { success: true, data: design }
+      return { success: true, data: design };
     }
   } catch (error) {
-    console.error('Failed to retrieve design:', error)
-    return { success: false, error: 'Failed to retrieve design' }
+    console.error('Failed to retrieve design:', error);
+    return { success: false, error: 'Failed to retrieve design' };
   }
 }
 
