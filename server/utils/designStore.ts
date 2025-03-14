@@ -94,23 +94,39 @@ export async function storeDesign(id: string, data: any) {
 
 // Retrieve a design by ID
 export async function getDesign(id: string) {
+  console.log(`DesignStore: Getting design with ID: ${id}`)
+  console.log(`DesignStore: Environment: ${isServer ? 'Server' : 'Client'}, Blob available: ${isBlobAvailable ? 'Yes' : 'No'}`)
+  
   try {
+    // Check in-memory storage first as a quick check
+    const memoryDesign = globalThis.sharedDesigns?.get(id);
+    if (memoryDesign) {
+      console.log('DesignStore: Found design in memory, returning it')
+      return { success: true, data: memoryDesign };
+    }
+    
     if (isBlobAvailable && isServer) {
       try {
         // First try using Vercel Blob read API if available
         try {
+          console.log('DesignStore: Trying Vercel Blob native get')
           const { get } = await import('@vercel/blob');
           const blob = await get(`designs/${id}.json`);
           
           if (blob) {
+            console.log('DesignStore: Got blob from Vercel Blob API')
             const designText = await blob.text();
             const designData = JSON.parse(designText);
+            
+            // Save to memory cache for future requests
+            if (!globalThis.sharedDesigns) globalThis.sharedDesigns = new Map();
+            globalThis.sharedDesigns.set(id, designData);
+            
             return { success: true, data: designData };
           }
         } catch (blobError) {
           // Vercel Blob get function might not be available or might throw
-          // Just log and continue to next approach
-          console.log('Vercel Blob get failed, trying manual approach:', blobError.message);
+          console.log('DesignStore: Vercel Blob get failed:', blobError.message);
         }
         
         // Store public URLs in memory to prevent repeated lookups
@@ -125,21 +141,35 @@ export async function getDesign(id: string) {
         if (!designUrl) {
           try {
             // Get the proper URL from the storage directly
+            console.log('DesignStore: Looking up blob URL via list')
             const { list } = await import('@vercel/blob');
             const { blobs } = await list({ prefix: `designs/${id}.json` });
+            
+            console.log(`DesignStore: List result: ${blobs?.length || 0} blobs found`)
             
             if (blobs && blobs.length > 0) {
               designUrl = blobs[0].url;
               globalThis.designUrlCache.set(id, designUrl);
+              console.log('DesignStore: Found blob URL:', designUrl)
+            } else {
+              console.log('DesignStore: No blobs found with this ID')
             }
           } catch (listError) {
-            console.log('Blob list error:', listError.message);
+            console.log('DesignStore: Blob list error:', listError.message);
             // If list fails, fall back to constructed URL
             designUrl = getDesignUrl(id);
+            console.log('DesignStore: Using constructed URL:', designUrl)
           }
+        } else {
+          console.log('DesignStore: Using cached URL:', designUrl)
         }
         
-        console.log('Fetching design from URL:', designUrl);
+        if (!designUrl) {
+          console.error('DesignStore: No URL available for this design')
+          return { success: false, error: 'Design not found (no URL available)' };
+        }
+        
+        console.log('DesignStore: Fetching design from URL:', designUrl);
         
         // Fetch the design with retry logic
         const controller = new AbortController();
@@ -156,24 +186,35 @@ export async function getDesign(id: string) {
           
           if (!response.ok) {
             if (response.status === 404) {
+              console.error('DesignStore: 404 Not Found from URL')
               return { success: false, error: 'Design not found' };
             }
             throw new Error(`Server returned ${response.status}`);
           }
           
           const designText = await response.text();
+          console.log(`DesignStore: Got response text (${designText.length} bytes)`)
+          
           const designData = JSON.parse(designText);
+          
+          // Save to memory cache for future requests
+          if (!globalThis.sharedDesigns) globalThis.sharedDesigns = new Map();
+          globalThis.sharedDesigns.set(id, designData);
+          
+          console.log('DesignStore: Successfully parsed design data')
           return { success: true, data: designData };
         } catch (fetchError) {
           clearTimeout(timeoutId);
+          console.error('DesignStore: Fetch error:', fetchError.message)
           throw fetchError;
         }
       } catch (error) {
-        console.error('Error retrieving design:', error);
+        console.error('DesignStore: Error retrieving design:', error.message || error);
         
-        // Check in-memory store as fallback
-        const memoryDesign = globalThis.sharedDesigns.get(id);
+        // Check in-memory store as last resort
+        const memoryDesign = globalThis.sharedDesigns?.get(id);
         if (memoryDesign) {
+          console.log('DesignStore: Found design in memory as fallback')
           return { success: true, data: memoryDesign };
         }
         
@@ -184,17 +225,19 @@ export async function getDesign(id: string) {
       }
     } else {
       // Fallback to in-memory storage for local dev
-      console.log('Using in-memory storage (no Blob available)');
-      const design = globalThis.sharedDesigns.get(id);
+      console.log('DesignStore: Using in-memory storage (no Blob available)');
+      const design = globalThis.sharedDesigns?.get(id);
       
       if (!design) {
-        return { success: false, error: 'Design not found' };
+        console.error('DesignStore: Design not found in memory storage')
+        return { success: false, error: 'Design not found in memory' };
       }
       
+      console.log('DesignStore: Found design in memory')
       return { success: true, data: design };
     }
   } catch (error) {
-    console.error('Failed to retrieve design:', error);
+    console.error('DesignStore: Fatal error retrieving design:', error.message || error);
     return { success: false, error: 'Failed to retrieve design' };
   }
 }

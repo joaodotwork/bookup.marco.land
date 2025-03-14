@@ -14,7 +14,7 @@ const shareId = route.params.id as string
 // Initialize the store
 bookStore.init()
 
-// Load the shared design
+// Load the shared design will happen in onMounted
 // Toggle animation playback
 function toggleAnimation() {
   animation.value.enabled = !animation.value.enabled
@@ -92,11 +92,32 @@ useHead({
 
 onMounted(async () => {
   try {
+    console.log('Share page mounted, loading design with ID:', shareId)
     isLoading.value = true
+    
+    // Debug the store state before loading
+    console.log('Initial store state:', { 
+      designsCount: designOptions.value.length,
+      currentId: currentDesignId.value
+    })
+    
+    // Load the shared design
     const success = await bookStore.loadSharedDesign(shareId)
+    console.log('Design load result:', success)
+    
+    // Check what we got after loading
+    console.log('After loading store state:', { 
+      designsCount: designOptions.value.length,
+      designs: designOptions.value.map(d => ({ id: d.id, name: d.name })),
+      currentId: currentDesignId.value,
+      animation: animation.value
+    })
 
     if (!success) {
+      console.error('Failed to load design with ID:', shareId)
       loadError.value = 'Could not load the shared design. It may have expired or been deleted.'
+    } else {
+      console.log('Successfully loaded shared design')
     }
     
     // Add fullscreen change listener
@@ -107,6 +128,7 @@ onMounted(async () => {
     loadError.value = 'An error occurred while loading the shared design.'
   }
   finally {
+    console.log('Loading complete, isLoading set to false')
     isLoading.value = false
   }
 })
