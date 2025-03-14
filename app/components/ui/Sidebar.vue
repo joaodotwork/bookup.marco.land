@@ -84,6 +84,9 @@ function exportCurrentView() {
 <template>
   <aside class="h-[100svh] border-l border-gray-200 shadow-lg overflow-auto bg-white dark:bg-[var(--color-gray-950)] dark:border-gray-800">
     <USeparator />
+    <!-- Design Options component for switching between designs -->
+    <BDesignOptions />
+    <USeparator />
     <BSection label="Design">
       <BInputFile file="cover" label="Cover" />
       <BInputFile file="spine" label="Spine" />
@@ -180,8 +183,8 @@ function exportCurrentView() {
     <USeparator />
     <BSection>
       <template #header>
-        <div 
-          class="flex items-center w-full cursor-pointer" 
+        <div
+          class="flex items-center w-full cursor-pointer"
           @click="showExport = !showExport"
         >
           <h2 class="text-xs font-bold">
@@ -224,8 +227,8 @@ function exportCurrentView() {
     <USeparator />
     <BSection>
       <template #header>
-        <div 
-          class="flex items-center w-full cursor-pointer" 
+        <div
+          class="flex items-center w-full cursor-pointer"
           @click="showInfo = !showInfo"
         >
           <h2 class="text-xs font-bold">
@@ -244,8 +247,8 @@ function exportCurrentView() {
     <USeparator />
     <BSection>
       <template #header>
-        <div 
-          class="flex items-center w-full cursor-pointer" 
+        <div
+          class="flex items-center w-full cursor-pointer"
           @click="showLicense = !showLicense"
         >
           <h2 class="text-xs font-bold">

@@ -3,7 +3,8 @@ const props = defineProps<{
   file: string
   label?: string
 }>()
-const { design } = storeToRefs(useBookStore())
+const bookStore = useBookStore()
+const { currentDesign } = storeToRefs(bookStore)
 const fileInput = ref<HTMLInputElement | null>(null)
 
 function handleFileChange() {
@@ -14,15 +15,18 @@ function handleFileChange() {
   if (file?.[0]) {
     const fileReader = new FileReader()
     fileReader.onload = function (event) {
+      const result = event.target?.result as string
+      
+      // We need to update the design property of the current design
       switch (props.file) {
         case 'cover':
-          design.value.cover = event.target?.result as string
+          currentDesign.value.design.cover = result
           break
         case 'back':
-          design.value.back = event.target?.result as string
+          currentDesign.value.design.back = result
           break
         case 'spine':
-          design.value.spine = event.target?.result as string
+          currentDesign.value.design.spine = result
           break
       }
     }

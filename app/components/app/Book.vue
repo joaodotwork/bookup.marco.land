@@ -19,9 +19,15 @@ const canvasRef = ref(null)
 const rendererContainer = ref(null)
 const initializationTimeout = ref(null)
 
-const { design, dimensions, rotation, animation, lighting, surface } = storeToRefs(useBookStore())
+const bookStore = useBookStore()
+const { design, dimensions, rotation, animation, lighting, surface } = storeToRefs(bookStore)
 const appStore = useAppStore()
 const { showSidebar } = storeToRefs(appStore)
+
+// Initialize the store
+onBeforeMount(() => {
+  bookStore.init()
+})
 
 // Simple logger - only outputs in dev mode for critical events
 function logDebug(message) {
@@ -93,10 +99,11 @@ function centerBook(forceRender = true, preserveCameraPosition = false) {
         controls.target.set(0, 0, 0)
         controls.update()
       }
-    } else if (oldPosition && camera) {
+    }
+    else if (oldPosition && camera) {
       // Restore the previous camera position
       camera.position.copy(oldPosition)
-      
+
       if (controls && oldTarget) {
         controls.target.copy(oldTarget)
         controls.update()
@@ -123,7 +130,7 @@ const handleResize = debounce((preserveCameraPosition = false) => {
   try {
     // Call centerBook which handles everything we need
     centerBook(true, preserveCameraPosition)
-    
+
     // Add a second resize/render call after a short delay
     // This helps catch changes that might not be fully applied yet,
     // especially horizontal dimension changes during sidebar transitions
@@ -616,14 +623,14 @@ async function initBookScene() {
 
     // Create scene
     scene = new THREE.Scene()
-    scene.background = new THREE.Color(design.value.background || '#0072FF')
+    scene.background = new THREE.Color(bookStore.background || '#0072FF')
 
     // Add a subtle environment map for more realistic reflections
     const pmremGenerator = new THREE.PMREMGenerator(renderer)
     pmremGenerator.compileEquirectangularShader()
 
     // Create a simple environment map using the scene background color
-    const envColor = new THREE.Color(design.value.background || '#0072FF')
+    const envColor = new THREE.Color(bookStore.background || '#0072FF')
     const cubeRenderTarget = pmremGenerator.fromScene(
       new THREE.Scene().add(new THREE.HemisphereLight(envColor.getHex(), 0x000000, 1)),
       0.04,
@@ -684,22 +691,24 @@ async function initBookScene() {
     // for proper cleanup
     resizeObserver = new ResizeObserver((entries) => {
       // Skip processing if Three.js elements are not initialized
-      if (!renderer || !camera || !rendererContainer.value) return;
+      if (!renderer || !camera || !rendererContainer.value)
+        return
 
       // Get the specific entry for our container
       const containerEntry = entries.find(entry => entry.target === rendererContainer.value)
       if (containerEntry) {
         // Extract the dimensions
         const { width, height } = containerEntry.contentRect
-        
+
         // Skip invalid dimensions
-        if (width <= 0 || height <= 0) return;
-        
+        if (width <= 0 || height <= 0)
+          return
+
         // Log if in dev mode
         if (process.dev) {
           console.log(`[Book] Container resized: ${width}x${height}`)
         }
-        
+
         // For automatic resizes from the ResizeObserver,
         // we want to preserve camera position to prevent view reset
         // during window resizes and layout changes
@@ -711,7 +720,7 @@ async function initBookScene() {
     if (rendererContainer.value) {
       // Observe both the container element and its parent for any size changes
       resizeObserver.observe(rendererContainer.value)
-      
+
       // Also observe the document body to catch broader layout changes
       resizeObserver.observe(document.body)
     }
@@ -719,7 +728,7 @@ async function initBookScene() {
     // Create a named function for the window resize handler and store in module variable
     // for proper cleanup
     windowResizeHandler = () => handleResize(true)
-    
+
     // Window resize listener as a backup - preserve camera position
     window.addEventListener('resize', windowResizeHandler)
 
@@ -1117,18 +1126,18 @@ window.exportBookImage = async (exportSettings) => {
   try {
     // Parse the scale value (e.g., "2x" -> 2)
     let scaleValue = Number.parseFloat(exportSettings.scale) || 1
-    
+
     // Define maximum dimensions to prevent memory issues
     const MAX_EXPORT_SIZE = 5000 * 5000 // ~25 megapixels
-    
+
     // Get current canvas dimensions
     const width = renderer.domElement.clientWidth
     const height = renderer.domElement.clientHeight
-    
+
     // Calculate new pixel dimensions
     const scaledWidth = width * scaleValue
     const scaledHeight = height * scaleValue
-    
+
     // Check if the export would be too large
     if (scaledWidth * scaledHeight > MAX_EXPORT_SIZE) {
       const adjustedScale = Math.sqrt(MAX_EXPORT_SIZE / (width * height))
@@ -1165,67 +1174,69 @@ window.exportBookImage = async (exportSettings) => {
     // Use more memory-efficient Blob approach instead of dataURL for large images
     try {
       // Create a blob from the canvas data
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      if (!blob) throw new Error('Failed to create blob from canvas');
-      
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+      if (!blob)
+        throw new Error('Failed to create blob from canvas')
+
       // Create an object URL from the blob
-      const url = URL.createObjectURL(blob);
-      
+      const url = URL.createObjectURL(blob)
+
       // Create an invisible download link
-      const link = document.createElement('a');
-      link.style.display = 'none';
-      link.href = url;
-      link.download = 'bookup-export.png';
-      
+      const link = document.createElement('a')
+      link.style.display = 'none'
+      link.href = url
+      link.download = 'bookup-export.png'
+
       // Add to DOM, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      
+      document.body.appendChild(link)
+      link.click()
+
       // Clean up after a delay to ensure download starts
       setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url); // Important: release the object URL to free memory
-      }, 100);
-    } catch (blobError) {
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url) // Important: release the object URL to free memory
+      }, 100)
+    }
+    catch (blobError) {
       // Fallback to dataURL method if blob approach fails
-      console.warn('Blob export failed, falling back to dataURL:', blobError);
-      
+      console.warn('Blob export failed, falling back to dataURL:', blobError)
+
       // Generate the data URL (always PNG)
-      const dataURL = canvas.toDataURL('image/png');
-      
+      const dataURL = canvas.toDataURL('image/png')
+
       // Set up the download
-      const link = document.createElement('a');
-      link.href = dataURL;
-      link.download = 'bookup-export.png';
-      
+      const link = document.createElement('a')
+      link.href = dataURL
+      link.download = 'bookup-export.png'
+
       // Trigger the download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     }
 
     // Restore original background if it was changed
     if (exportSettings.transparent && originalBackground) {
-      scene.background = originalBackground;
-      originalBackground.dispose(); // Properly dispose the clone
+      scene.background = originalBackground
+      originalBackground.dispose() // Properly dispose the clone
     }
 
     // Restore original renderer settings
-    renderer.setPixelRatio(originalSize.pixelRatio);
-    renderer.setSize(originalSize.width, originalSize.height, false);
+    renderer.setPixelRatio(originalSize.pixelRatio)
+    renderer.setSize(originalSize.width, originalSize.height, false)
 
     // Render once more with original settings
-    renderer.render(scene, camera);
+    renderer.render(scene, camera)
 
-    console.log(`Image exported as PNG at ${exportSettings.scale} scale${exportSettings.transparent ? ' with transparent background' : ''}`);
+    console.log(`Image exported as PNG at ${exportSettings.scale} scale${exportSettings.transparent ? ' with transparent background' : ''}`)
   }
   catch (error) {
-    console.error('Error exporting image:', error);
+    console.error('Error exporting image:', error)
   }
   finally {
     // Always reset loading states
-    isExporting = false;
-    isLoading.value = false;
+    isExporting = false
+    isLoading.value = false
   }
 }
 
@@ -1276,7 +1287,8 @@ onBeforeUnmount(() => {
     try {
       resizeObserver.disconnect()
       resizeObserver = null
-    } catch (e) {
+    }
+    catch (e) {
       console.error('Error disconnecting resize observer:', e)
     }
   }
@@ -1305,24 +1317,32 @@ onBeforeUnmount(() => {
 
         if (object.material) {
           if (Array.isArray(object.material)) {
-            object.material.forEach(material => {
+            object.material.forEach((material) => {
               // Dispose any textures on materials
-              if (material.map) material.map.dispose()
-              if (material.normalMap) material.normalMap.dispose()
-              if (material.specularMap) material.specularMap.dispose()
-              if (material.envMap) material.envMap.dispose()
-              
+              if (material.map)
+                material.map.dispose()
+              if (material.normalMap)
+                material.normalMap.dispose()
+              if (material.specularMap)
+                material.specularMap.dispose()
+              if (material.envMap)
+                material.envMap.dispose()
+
               // Dispose material itself
               material.dispose()
             })
           }
           else {
             // Dispose any textures on materials
-            if (object.material.map) object.material.map.dispose()
-            if (object.material.normalMap) object.material.normalMap.dispose() 
-            if (object.material.specularMap) object.material.specularMap.dispose()
-            if (object.material.envMap) object.material.envMap.dispose()
-            
+            if (object.material.map)
+              object.material.map.dispose()
+            if (object.material.normalMap)
+              object.material.normalMap.dispose()
+            if (object.material.specularMap)
+              object.material.specularMap.dispose()
+            if (object.material.envMap)
+              object.material.envMap.dispose()
+
             // Dispose material itself
             object.material.dispose()
           }
@@ -1338,9 +1358,9 @@ onBeforeUnmount(() => {
       texture.dispose()
     }
   })
-  
+
   // Reset textures object
-  Object.keys(textures).forEach(key => {
+  Object.keys(textures).forEach((key) => {
     textures[key] = null
   })
 
@@ -1356,9 +1376,10 @@ onBeforeUnmount(() => {
     const gl = renderer.getContext()
     if (gl) {
       const loseContext = gl.getExtension('WEBGL_lose_context')
-      if (loseContext) loseContext.loseContext()
+      if (loseContext)
+        loseContext.loseContext()
     }
-    
+
     renderer.dispose()
     renderer = null
   }
@@ -1367,10 +1388,12 @@ onBeforeUnmount(() => {
   scene = null
   camera = null
   controls = null
-  
+
   // Clear global references
-  if (window.resetBookCamera) window.resetBookCamera = null
-  if (window.exportBookImage) window.exportBookImage = null
+  if (window.resetBookCamera)
+    window.resetBookCamera = null
+  if (window.exportBookImage)
+    window.exportBookImage = null
 })
 
 // Keep track of sidebar transition timeouts so we can clear them
@@ -1381,12 +1404,12 @@ watch(() => showSidebar.value, () => {
   // Clear any previous timeouts to avoid overlapping resize events
   sidebarTransitionTimeouts.forEach(timeoutId => clearTimeout(timeoutId))
   sidebarTransitionTimeouts = []
-  
+
   // For sidebar transitions, we need to handle resize but avoid redundant operations
-  
+
   // Initial resize with camera position preservation
   handleResize(true) // true = preserve camera position
-  
+
   // Use a single delayed resize after the transition completes
   // The standard transition duration is 300ms in CSS
   const timeoutId = setTimeout(() => {
@@ -1396,7 +1419,7 @@ watch(() => showSidebar.value, () => {
       handleResize(true)
     }
   }, 350) // Just after transition completes
-  
+
   sidebarTransitionTimeouts.push(timeoutId)
 })
 
@@ -1407,13 +1430,38 @@ watch(() => [dimensions.value.width, dimensions.value.height, dimensions.value.d
     handleResize()
   }
 })
+
+// Watch for background color changes
+watch(() => bookStore.background, (newColor) => {
+  if (scene) {
+    scene.background = new THREE.Color(newColor)
+    
+    // Also update environment map if needed
+    const pmremGenerator = new THREE.PMREMGenerator(renderer)
+    pmremGenerator.compileEquirectangularShader()
+    
+    const envColor = new THREE.Color(newColor)
+    const cubeRenderTarget = pmremGenerator.fromScene(
+      new THREE.Scene().add(new THREE.HemisphereLight(envColor.getHex(), 0x000000, 1)),
+      0.04,
+    )
+    
+    // Dispose of previous environment map if exists
+    if (scene.environment) 
+      scene.environment.dispose()
+      
+    scene.environment = cubeRenderTarget.texture
+    
+    needsUpdate = true
+  }
+})
 </script>
 
 <template>
   <div
     id="book"
     ref="rendererContainer"
-    :style="{ backgroundColor: design.background }"
+    :style="{ backgroundColor: bookStore.background }"
   >
     <!-- Error message -->
     <div v-if="error" class="error-container">
