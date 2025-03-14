@@ -1,4 +1,5 @@
-import { put, list, del, get } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
+import { createClient } from '@vercel/blob';
 
 /**
  * Persistent storage for design data using Vercel Blob.
@@ -45,22 +46,36 @@ export async function storeDesign(id: string, data: any) {
 export async function getDesign(id: string) {
   try {
     if (isBlobAvailable) {
-      // Get from Vercel Blob
+      // Get from Vercel Blob using URL construction
       try {
-        const blob = await get(`designs/${id}.json`)
+        // Create blob client
+        const client = createClient();
         
-        if (!blob) {
+        // Construct the URL for the design file
+        const { url } = await client.getUrl(`designs/${id}.json`);
+        
+        if (!url) {
           return { success: false, error: 'Design not found' }
         }
         
+        // Fetch the design file
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            return { success: false, error: 'Design not found' }
+          }
+          throw new Error(`Failed to fetch design: ${response.statusText}`);
+        }
+        
         // Get blob content as text (JSON)
-        const designText = await blob.text()
-        const designData = JSON.parse(designText)
+        const designText = await response.text();
+        const designData = JSON.parse(designText);
         
         return { success: true, data: designData }
       } catch (error) {
-        // If the blob doesn't exist, Vercel will throw a 404 error
-        if (error.status === 404) {
+        // If the blob doesn't exist or there's an error, handle it
+        if (error.message && error.message.includes('not found')) {
           return { success: false, error: 'Design not found' }
         }
         throw error
