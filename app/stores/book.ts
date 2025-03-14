@@ -178,31 +178,147 @@ export const useBookStore = defineStore('@bookup/book', {
         console.log('Creating share with ID:', this.shareId)
 
         // Get a simplified version of the design options
-        // Strip out binary data to reduce size
-        const optimizedDesignOptions = this.designOptions.map(design => {
-          // Create a copy without large binary data
-          return {
+        let optimizedDesignOptions = this.designOptions.map(design => {
+          // Create a copy of the design preserving image URLs
+          const optimizedDesign = {
             id: design.id,
             name: design.name,
             createdAt: design.createdAt,
-            // Only include URLs, not base64 data for images
+            // Preserve image URLs but not base64 data (initially)
             design: {
-              cover: design.design.cover?.startsWith('data:') ? 
-                '[IMAGE DATA]' : design.design.cover || '',
-              back: design.design.back?.startsWith('data:') ? 
-                '[IMAGE DATA]' : design.design.back || '',
-              spine: design.design.spine?.startsWith('data:') ? 
-                '[IMAGE DATA]' : design.design.spine || '',
+              cover: design.design.cover || '',
+              back: design.design.back || '',
+              spine: design.design.spine || '',
             },
             lighting: design.lighting,
             surface: design.surface,
             export: design.export,
+          };
+          
+          // We'll keep image URLs as they are, but handle data URLs separately
+          // by uploading them to Vercel Blob and storing the resulting URLs
+          if (design.design.cover?.startsWith('data:')) {
+            // Set a temporary flag - we'll handle this further in the process
+            optimizedDesign.design.coverIsDataUrl = true;
+            // Keep the data temporarily
+            optimizedDesign.design.coverData = design.design.cover;
           }
+          
+          if (design.design.back?.startsWith('data:')) {
+            optimizedDesign.design.backIsDataUrl = true;
+            optimizedDesign.design.backData = design.design.back;
+          }
+          
+          if (design.design.spine?.startsWith('data:')) {
+            optimizedDesign.design.spineIsDataUrl = true;
+            optimizedDesign.design.spineData = design.design.spine;
+          }
+          
+          return optimizedDesign;
         });
+
+        // First, upload any data URLs to Vercel Blob
+        try {
+          // Track upload progress
+          let totalUploads = 0;
+          let completedUploads = 0;
+          
+          // Count how many images need to be uploaded
+          optimizedDesignOptions.forEach(design => {
+            if (design.design.coverIsDataUrl) totalUploads++;
+            if (design.design.backIsDataUrl) totalUploads++;
+            if (design.design.spineIsDataUrl) totalUploads++;
+          });
+          
+          if (totalUploads > 0) {
+            console.log(`Uploading ${totalUploads} images before sharing design...`);
+          }
+          
+          // Process each design option to upload images
+          const uploadPromises = [];
+          
+          for (let i = 0; i < optimizedDesignOptions.length; i++) {
+            const design = optimizedDesignOptions[i];
+            
+            // Handle cover image
+            if (design.design.coverIsDataUrl && design.design.coverData) {
+              const imageId = `${this.shareId}-${design.id}-cover`;
+              uploadPromises.push(
+                this.uploadImageToBlob(design.design.coverData, imageId)
+                  .then(result => {
+                    // Replace data URL with Blob URL
+                    design.design.cover = result.url;
+                    delete design.design.coverIsDataUrl;
+                    delete design.design.coverData;
+                    completedUploads++;
+                    console.log(`Uploaded image ${completedUploads}/${totalUploads}`);
+                  })
+                  .catch(err => {
+                    console.error('Failed to upload cover image:', err);
+                    // Remove the data URL but keep the flag
+                    delete design.design.coverData;
+                    design.design.cover = '';
+                    completedUploads++;
+                  })
+              );
+            }
+            
+            // Handle back image
+            if (design.design.backIsDataUrl && design.design.backData) {
+              const imageId = `${this.shareId}-${design.id}-back`;
+              uploadPromises.push(
+                this.uploadImageToBlob(design.design.backData, imageId)
+                  .then(result => {
+                    design.design.back = result.url;
+                    delete design.design.backIsDataUrl;
+                    delete design.design.backData;
+                    completedUploads++;
+                    console.log(`Uploaded image ${completedUploads}/${totalUploads}`);
+                  })
+                  .catch(err => {
+                    console.error('Failed to upload back image:', err);
+                    delete design.design.backData;
+                    design.design.back = '';
+                    completedUploads++;
+                  })
+              );
+            }
+            
+            // Handle spine image
+            if (design.design.spineIsDataUrl && design.design.spineData) {
+              const imageId = `${this.shareId}-${design.id}-spine`;
+              uploadPromises.push(
+                this.uploadImageToBlob(design.design.spineData, imageId)
+                  .then(result => {
+                    design.design.spine = result.url;
+                    delete design.design.spineIsDataUrl;
+                    delete design.design.spineData;
+                    completedUploads++;
+                    console.log(`Uploaded image ${completedUploads}/${totalUploads}`);
+                  })
+                  .catch(err => {
+                    console.error('Failed to upload spine image:', err);
+                    delete design.design.spineData;
+                    design.design.spine = '';
+                    completedUploads++;
+                  })
+              );
+            }
+          }
+          
+          // Wait for all uploads to complete
+          if (uploadPromises.length > 0) {
+            await Promise.all(uploadPromises);
+            console.log('All images uploaded successfully');
+          }
+        } catch (uploadError) {
+          console.error('Error during image uploads:', uploadError);
+          // Continue with sharing even if image uploads failed
+        }
 
         // Create a complete data object that includes designs and shared properties
         const completeData = {
-          // Include optimized design options
+          // Include optimized design options (now with blob URLs)
           designOptions: optimizedDesignOptions,
           // Current design ID
           currentDesignId: this.currentDesignId,
@@ -245,6 +361,30 @@ export const useBookStore = defineStore('@bookup/book', {
         console.error('Error sharing design:', error);
         return null;
       }
+    },
+    
+    // Helper to upload an image to Vercel Blob
+    async uploadImageToBlob(dataUrl, imageId) {
+      // Extract content type from data URL
+      const contentType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+      
+      // Upload to our server API endpoint
+      const response = await fetch('/api/designs/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: dataUrl,
+          imageId,
+          contentType
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload image: ${errorText}`);
+      }
+      
+      return await response.json();
     },
 
     // Load a shared design from a share ID

@@ -769,6 +769,9 @@ watch(() => [design.value.cover, design.value.back, design.value.spine], async (
     return
 
   try {
+    // No special handling needed now that we're properly uploading images to Blob
+    // The textures will be loaded from the Blob URLs just like normal URLs
+    
     // Update textures
     const updatedTextures = {
       cover: design.value.cover ? await loadTexture(design.value.cover) : textures.cover,
