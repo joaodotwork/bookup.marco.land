@@ -208,7 +208,7 @@ async function handleShare() {
 
     <!-- Control buttons container - aligned to the right edge -->
     <div
-      class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300 flex flex-col gap-2"
+      class="fixed z-20 top-1/2 transform -translate-y-1/2 right-[308px] transition-all duration-300 flex flex-col gap-2 items-center"
       :style="{ right: showSidebar ? '308px' : '4px' }"
     >
       <!-- Sidebar toggle button -->
