@@ -177,10 +177,33 @@ export const useBookStore = defineStore('@bookup/book', {
         // For debugging purposes
         console.log('Creating share with ID:', this.shareId)
 
-        // Create a complete data object that includes all designs and shared properties
+        // Get a simplified version of the design options
+        // Strip out binary data to reduce size
+        const optimizedDesignOptions = this.designOptions.map(design => {
+          // Create a copy without large binary data
+          return {
+            id: design.id,
+            name: design.name,
+            createdAt: design.createdAt,
+            // Only include URLs, not base64 data for images
+            design: {
+              cover: design.design.cover?.startsWith('data:') ? 
+                '[IMAGE DATA]' : design.design.cover || '',
+              back: design.design.back?.startsWith('data:') ? 
+                '[IMAGE DATA]' : design.design.back || '',
+              spine: design.design.spine?.startsWith('data:') ? 
+                '[IMAGE DATA]' : design.design.spine || '',
+            },
+            lighting: design.lighting,
+            surface: design.surface,
+            export: design.export,
+          }
+        });
+
+        // Create a complete data object that includes designs and shared properties
         const completeData = {
-          // Include all design options
-          designOptions: this.designOptions,
+          // Include optimized design options
+          designOptions: optimizedDesignOptions,
           // Current design ID
           currentDesignId: this.currentDesignId,
           // Shared properties
@@ -189,8 +212,13 @@ export const useBookStore = defineStore('@bookup/book', {
           background: this.background,
           animation: this.animation,
         }
-        
-        console.log('Data to share:', JSON.stringify(completeData))
+
+        // Check size first
+        const dataSize = JSON.stringify(completeData).length;
+        if (dataSize > 5 * 1024 * 1024) {
+          console.error(`Design data is too large: ${Math.round(dataSize / 1024 / 1024)}MB`);
+          return null;
+        }
 
         // Call the API to share the design
         const response = await fetch('/api/designs/share', {
@@ -205,16 +233,17 @@ export const useBookStore = defineStore('@bookup/book', {
         })
 
         if (!response.ok) {
-          console.error('Failed to share design:', await response.text())
-          return null
+          const errorText = await response.text();
+          console.error('Failed to share design:', errorText);
+          return null;
         }
 
-        const result = await response.json()
-        return result.shareUrl
+        const result = await response.json();
+        return result.shareUrl;
       }
       catch (error) {
-        console.error('Error sharing design:', error)
-        return null
+        console.error('Error sharing design:', error);
+        return null;
       }
     },
 
