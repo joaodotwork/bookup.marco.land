@@ -186,7 +186,7 @@ async function handleShare() {
 </script>
 
 <template>
-  <div class="flex h-screen relative">
+  <div class="flex h-screen relative overflow-hidden">
     <!-- Main content area -->
     <div class="flex-grow">
       <ClientOnly>
