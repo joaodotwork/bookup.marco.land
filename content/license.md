@@ -5,6 +5,7 @@ title: 'Bookup — License'
 # Bookup License
 
 Copyright © 2024 Marco Land
+Enhanced version with 3D implementation, sharing features, and UI improvements by João Doria de Souza.
 
 This license governs the use of the Bookup website and its outputs (the "Service"). By using the Service, you agree to the terms outlined below:
 
